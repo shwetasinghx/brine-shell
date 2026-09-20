@@ -18,6 +18,18 @@ const adminRoute = require('./routes/admin.routes');
 
 const app = express();
 
+// Hostinger (and most other Node hosts) sit the app behind their own
+// reverse proxy (LiteSpeed here), which adds an X-Forwarded-For
+// header to every request. Without this, Express doesn't trust that
+// header, so req.ip falls back to the proxy's own address for every
+// visitor -- meaning express-rate-limit would key every rate limiter
+// off a single shared "IP" instead of each real client, and logs a
+// ValidationError warning about it on every request. `1` trusts
+// exactly one hop (the proxy in front of us), which is correct for
+// this single-proxy setup; it would need to be a specific IP/CIDR
+// list if there were ever more than one proxy hop in front of the app.
+app.set('trust proxy', 1);
+
 // Captures the raw request body alongside Express's normal JSON
 // parsing — the webhook route needs the exact raw bytes to verify
 // Razorpay's HMAC signature; every other route just uses req.body
