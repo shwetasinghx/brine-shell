@@ -50,8 +50,8 @@ app.use('/api/admin', adminRoute);
 
 app.use(errorHandler);
 
-const frontendPath = path.join(__dirname, '..', '..', frontendDirectory);
-const uploadsPath = path.join(__dirname, '..', '..', 'uploads');
+const frontendPath = path.join(__dirname, '..', frontendDirectory);
+const uploadsPath = path.join(__dirname, '..', 'uploads');
 
 // Keep page files fresh after deployment while allowing images/uploads to cache normally.
 app.use(express.static(frontendPath, {
