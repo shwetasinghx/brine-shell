@@ -5,8 +5,8 @@
   "description": "API for brineandshell.com: contact form, newsletter signup, Razorpay checkout with server-side verification, Google Sign-In sessions, order status, and returns.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
   },
   "engines": {
     "node": ">=18"
