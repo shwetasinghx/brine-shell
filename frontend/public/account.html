@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile | Brine & Shell</title>
+  <meta name="description" content="Manage your Brine & Shell profile and saved delivery addresses." />
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://www.brineandshell.com/account.html" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="icon" type="image/png" href="assets/images/brineandshell.png" />
+  <link rel="apple-touch-icon" href="assets/images/brineandshell.png" />
+  <meta name="theme-color" content="#1C1B3A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="page-hero">
+  <p class="eyebrow">Your Account</p>
+  <h1>My Profile</h1>
+  <p>Your contact details and saved delivery addresses, kept under whichever Google account you're signed in with.</p>
+</div>
+
+<div class="account-layout">
+  <div id="accountSignedOut" style="display:none; text-align:center; padding:40px 5%;">
+    <p style="margin-bottom:20px;color:var(--muted)">Sign in with Google to manage your profile.</p>
+    <div id="acctGoogleBtn" class="gsi-btn-wrap" style="justify-content:center;display:flex;"></div>
+  </div>
+
+  <div id="accountSignedIn" style="display:none;">
+
+    <!-- PROFILE -->
+    <div class="profile-card">
+      <div class="profile-card-head">
+        <h3>Profile</h3>
+        <button class="cart-action-link" id="profileToggleBtn" onclick="toggleProfileForm()">Edit</button>
+      </div>
+      <div id="profileView" class="profile-view">
+        <p><strong>Email</strong><span id="pvEmail"></span></p>
+        <p><strong>Name</strong><span id="pvName">Not saved yet</span></p>
+        <p><strong>Phone</strong><span id="pvPhone">Not saved yet</span></p>
+      </div>
+      <div id="profileForm" style="display:none;margin-top:14px;">
+        <div class="form-group"><label>Name *</label><input type="text" id="pfName" placeholder="Riya Sharma" /></div>
+        <div class="form-group"><label>Phone *</label><input type="tel" id="pfPhone" placeholder="9876543210" maxlength="10" /></div>
+        <button class="form-submit" onclick="saveProfile()">Save Profile</button>
+        <div class="form-success" id="profileSuccess">Profile saved.</div>
+        <div class="form-error" id="profileError"></div>
+      </div>
+    </div>
+
+    <!-- SAVED ADDRESSES -->
+    <div class="profile-card">
+      <div class="profile-card-head">
+        <h3>Address Book</h3>
+        <button class="cart-action-link" id="addressToggleBtn" onclick="toggleAddressForm()">+ Add Address</button>
+      </div>
+      <div id="addressList"><p style="color:var(--muted);font-size:14px">Loading…</p></div>
+      <div id="addressForm" style="display:none;margin-top:14px;">
+        <div class="form-group">
+          <label>Label *</label>
+          <div class="label-choice-group" id="afLabelGroup">
+            <button type="button" class="label-choice" data-label="Home" onclick="selectAddressLabel('Home')">Home</button>
+            <button type="button" class="label-choice" data-label="Work" onclick="selectAddressLabel('Work')">Work</button>
+            <button type="button" class="label-choice" data-label="Other" onclick="selectAddressLabel('Other')">Other</button>
+            <button type="button" class="label-choice-add" title="Add a custom address" onclick="selectAddressLabel('Other')">+</button>
+          </div>
+          <input type="text" id="afLabelOther" placeholder="Name this address, e.g. Mom's Place" maxlength="60" style="display:none;margin-top:10px;" />
+        </div>
+        <div class="form-group"><label>Recipient Name *</label><input type="text" id="afRecipient" placeholder="Who should we deliver this to?" /></div>
+        <div class="form-group"><label>Phone *</label><input type="tel" id="afPhone" placeholder="9876543210" maxlength="10" /></div>
+        <div class="form-group"><label>Address *</label><textarea id="afAddress" class="address-textarea" placeholder="House no., street, area" rows="2" maxlength="160" oninput="capAddressWords(this)"></textarea></div>
+        <div class="form-group"><label>State *</label><select id="afState" onchange="onAddressStateChange()"><option value="">Select State</option></select></div>
+        <div class="form-group">
+          <label>City *</label>
+          <select id="afCity" onchange="onAddressCityChange()" disabled><option value="">Select state first</option></select>
+          <input type="text" id="afCityOther" placeholder="Type your city" maxlength="60" style="display:none;margin-top:10px;" />
+        </div>
+        <div class="form-group"><label>PIN Code *</label><input type="text" id="afPincode" placeholder="560001" maxlength="6" inputmode="numeric" /></div>
+        <button class="form-submit" onclick="saveAddress()">Save Address</button>
+        <div class="form-success" id="addressSuccess">Address saved.</div>
+        <div class="form-error" id="addressError"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/products.js"></script>
+<script src="assets/js/india-locations.js"></script>
+<script>
+  window.PAGE = { active: '', cartNav: false };
+</script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/partials.js"></script>
+<script>
+/* ── PROFILE (name + phone -- the account holder's own contact info,
+   saved against whichever Google account they're signed in with) ── */
+function toggleProfileForm() {
+  const view = document.getElementById('profileView');
+  const form = document.getElementById('profileForm');
+  const showingForm = form.style.display !== 'none';
+  view.style.display = showingForm ? 'block' : 'none';
+  form.style.display = showingForm ? 'none' : 'block';
+  document.getElementById('profileToggleBtn').textContent = showingForm ? 'Edit' : 'Cancel';
+}
+
+async function loadProfile() {
+  document.getElementById('pvEmail').textContent = window.CURRENT_USER?.email || '';
+  try {
+    const res = await fetch(`${API_BASE}/api/profile`, { credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error();
+    document.getElementById('pvName').textContent = data.profile.name || 'Not saved yet';
+    document.getElementById('pvPhone').textContent = data.profile.phone || 'Not saved yet';
+    document.getElementById('pfName').value = data.profile.name || '';
+    document.getElementById('pfPhone').value = data.profile.phone || '';
+  } catch {
+    // Non-fatal -- the profile card just stays on its "not saved yet" defaults.
+  }
+}
+
+async function saveProfile() {
+  const name = document.getElementById('pfName').value.trim();
+  const phone = document.getElementById('pfPhone').value.trim();
+  const err = document.getElementById('profileError');
+  const ok = document.getElementById('profileSuccess');
+  err.style.display = 'none';
+  ok.style.display = 'none';
+  if (!name || !phone) {
+    err.textContent = 'Name and phone are both required.';
+    err.style.display = 'block';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/profile`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save your profile.');
+    ok.style.display = 'block';
+    await loadProfile();
+    toggleProfileForm();
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  }
+}
+
+/* ── SAVED ADDRESSES (an account can have several -- Home, Office, a
+   gift recipient's place -- each with its own recipient name/phone,
+   since who receives an order can differ from who placed it). All
+   four fields are required when adding one. ── */
+function renderAddressList(addresses) {
+  const el = document.getElementById('addressList');
+  if (!addresses.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:14px">Your address book is empty. Add one so checkout can remember it next time.</p>';
+    return;
+  }
+  el.innerHTML = addresses.map(a => `
+    <div class="address-item">
+      <div>
+        <div class="address-label">${a.label}</div>
+        <div class="address-meta">${a.recipientName} · ${a.phone}</div>
+        <div class="address-text">${[a.address, a.city, a.state, a.pincode].filter(Boolean).join(', ')}</div>
+      </div>
+      <button class="cart-action-link" onclick="deleteAddress('${a.id}')">Remove</button>
+    </div>`).join('');
+}
+
+async function loadAddresses() {
+  try {
+    const res = await fetch(`${API_BASE}/api/addresses`, { credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error();
+    renderAddressList(data.addresses);
+  } catch {
+    document.getElementById('addressList').innerHTML = '<p style="color:#842029;font-size:14px">Could not load your address book.</p>';
+  }
+}
+
+function toggleAddressForm() {
+  const f = document.getElementById('addressForm');
+  const showing = f.style.display !== 'none';
+  f.style.display = showing ? 'none' : 'block';
+  document.getElementById('addressToggleBtn').textContent = showing ? '+ Add Address' : 'Cancel';
+  if (!showing) {
+    ['afRecipient', 'afPhone', 'afAddress', 'afPincode', 'afLabelOther'].forEach(id => document.getElementById(id).value = '');
+    resetAddressLabelPicker();
+    resetAddressLocationPickers();
+    document.getElementById('addressError').style.display = 'none';
+    document.getElementById('addressSuccess').style.display = 'none';
+  }
+}
+
+function capAddressWords(el) {
+  const words = el.value.trim().split(/\s+/).filter(Boolean);
+  if (words.length > 25) el.value = words.slice(0, 25).join(' ');
+}
+
+let selectedAddressLabel = '';
+function selectAddressLabel(label) {
+  selectedAddressLabel = label;
+  document.querySelectorAll('#afLabelGroup .label-choice').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.label === label);
+  });
+  document.getElementById('afLabelOther').style.display = label === 'Other' ? 'block' : 'none';
+}
+function resetAddressLabelPicker() {
+  selectedAddressLabel = '';
+  document.querySelectorAll('#afLabelGroup .label-choice').forEach(btn => btn.classList.remove('active'));
+  document.getElementById('afLabelOther').style.display = 'none';
+}
+
+/* ── STATE / CITY (cascading -- pick a state, then its cities load).
+   INDIA_LOCATIONS (js/india-locations.js) is a curated list, not an
+   exhaustive one, so City always ends with an "Other" option that
+   reveals a plain text box for anywhere not listed. ── */
+function populateStateDropdown() {
+  const sel = document.getElementById('afState');
+  if (typeof INDIA_LOCATIONS === 'undefined' || sel.options.length > 1) return;
+  Object.keys(INDIA_LOCATIONS).sort().forEach(state => {
+    const opt = document.createElement('option');
+    opt.value = state;
+    opt.textContent = state;
+    sel.appendChild(opt);
+  });
+}
+populateStateDropdown();
+
+function onAddressStateChange() {
+  const state = document.getElementById('afState').value;
+  const citySel = document.getElementById('afCity');
+  document.getElementById('afCityOther').style.display = 'none';
+  document.getElementById('afCityOther').value = '';
+  if (!state || typeof INDIA_LOCATIONS === 'undefined') {
+    citySel.disabled = true;
+    citySel.innerHTML = '<option value="">Select state first</option>';
+    return;
+  }
+  citySel.disabled = false;
+  const cities = (INDIA_LOCATIONS[state] || []).slice().sort();
+  citySel.innerHTML = '<option value="">Select City</option>'
+    + cities.map(c => `<option value="${c}">${c}</option>`).join('')
+    + '<option value="__other__">Other (type manually)</option>';
+}
+
+function onAddressCityChange() {
+  const isOther = document.getElementById('afCity').value === '__other__';
+  document.getElementById('afCityOther').style.display = isOther ? 'block' : 'none';
+}
+
+function resetAddressLocationPickers() {
+  document.getElementById('afState').value = '';
+  const citySel = document.getElementById('afCity');
+  citySel.disabled = true;
+  citySel.innerHTML = '<option value="">Select state first</option>';
+  document.getElementById('afCityOther').style.display = 'none';
+  document.getElementById('afCityOther').value = '';
+}
+
+async function saveAddress() {
+  const label = selectedAddressLabel === 'Other'
+    ? document.getElementById('afLabelOther').value.trim()
+    : selectedAddressLabel;
+  const recipientName = document.getElementById('afRecipient').value.trim();
+  const phone = document.getElementById('afPhone').value.trim();
+  const address = document.getElementById('afAddress').value.trim();
+  const state = document.getElementById('afState').value.trim();
+  const citySelectVal = document.getElementById('afCity').value.trim();
+  const city = citySelectVal === '__other__'
+    ? document.getElementById('afCityOther').value.trim()
+    : citySelectVal;
+  const pincode = document.getElementById('afPincode').value.trim();
+  const err = document.getElementById('addressError');
+  const ok = document.getElementById('addressSuccess');
+  err.style.display = 'none';
+  ok.style.display = 'none';
+  if (!label) {
+    err.textContent = selectedAddressLabel === 'Other'
+      ? 'Please name this address.'
+      : 'Please choose Home, Work, or Other.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!recipientName || !phone || !address || !city || !state || !pincode) {
+    err.textContent = 'Please fill in every field.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!/^[1-9][0-9]{5}$/.test(pincode)) {
+    err.textContent = 'Enter a valid 6-digit PIN code.';
+    err.style.display = 'block';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/addresses`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, recipientName, phone, address, city, state, pincode }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save that address.');
+    ok.style.display = 'block';
+    await loadAddresses();
+    toggleAddressForm();
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  }
+}
+
+async function deleteAddress(id) {
+  if (!confirm('Remove this saved address?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/addresses/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not remove that address.');
+    await loadAddresses();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+document.addEventListener('auth:changed', (e) => {
+  if (e.detail.user) {
+    document.getElementById('accountSignedOut').style.display = 'none';
+    document.getElementById('accountSignedIn').style.display = 'block';
+    loadProfile();
+    loadAddresses();
+  } else {
+    document.getElementById('accountSignedIn').style.display = 'none';
+    document.getElementById('accountSignedOut').style.display = 'block';
+    whenGoogleReady(() => renderGoogleButton('acctGoogleBtn'));
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact | Brine & Shell</title>
+  <meta name="description" content="Questions, bulk orders, or partnerships? Reach Brine & Shell by email or phone, or send a message. We respond within 24 hours on business days." />
+  <link rel="canonical" href="https://www.brineandshell.com/contact.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Contact | Brine & Shell" />
+  <meta property="og:description" content="Get in touch with Brine & Shell for orders, bulk pricing, partnerships, or support." />
+  <meta property="og:image" content="https://www.brineandshell.com/assets/images/brineandshell.png" />
+  <meta property="og:url" content="https://www.brineandshell.com/contact.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/png" href="assets/images/brineandshell.png" />
+  <link rel="apple-touch-icon" href="assets/images/brineandshell.png" />
+  <meta name="theme-color" content="#1C1B3A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="page-hero">
+  <p class="eyebrow">Get in Touch</p>
+  <h1>We'd love to hear from you</h1>
+  <p>Questions, bulk orders, partnerships, or just want to say hi? We're here.</p>
+</div>
+
+<div style="background:var(--cream);padding:72px 5%">
+  <div class="contact-layout">
+
+    <div class="contact-info">
+      <p class="eyebrow">Contact Info</p>
+      <h2>Let's talk peanut butter</h2>
+      <p>Our team responds within 24 hours on business days. For urgent orders, call us directly.</p>
+      <div class="c-detail"><span class="c-icon">01</span><div><strong>Email</strong><span>support@brineandshell.com</span></div></div>
+      <div class="c-detail"><span class="c-icon">02</span><div><strong>Phone</strong><span>+91 12345 67890</span><span style="display:block;font-size:12px;color:#999">Mon–Sat, 10am–6pm IST</span></div></div>
+      <div class="c-detail"><span class="c-icon">03</span><div><strong>Address</strong><span>Mumbai, Maharashtra, India</span></div></div>
+      <div class="c-detail"><span class="c-icon">04</span><div><strong>Delivery</strong><span>Pan-India. Free above <span data-fd-amount>₹499</span>.</span></div></div>
+
+      <div class="faq-box">
+        <h4>Quick Answers</h4>
+        <div class="faq-item">
+          <button class="faq-q" id="faqBtn1">Do you ship pan-India? <span>▾</span></button>
+          <div class="faq-a" id="faqA1">Yes! We ship to all pin codes across India. Delivery in 3–5 business days.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" id="faqBtn2">Can I return a product? <span>▾</span></button>
+          <div class="faq-a" id="faqA2">We have a 7-day return policy for damaged or incorrect products.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" id="faqBtn3">Do you do bulk orders? <span>▾</span></button>
+          <div class="faq-a" id="faqA3">Yes! Special pricing for 20+ units. Email us at support@brineandshell.com.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form">
+      <h3>Send us a message</h3>
+      <form id="contactForm" onsubmit="submitForm(event)">
+        <div class="form-row-2">
+          <div class="form-group"><label>First Name *</label><input type="text" name="firstName" placeholder="Riya" required /></div>
+          <div class="form-group"><label>Last Name *</label><input type="text" name="lastName" placeholder="Sharma" required /></div>
+        </div>
+        <div class="form-group"><label>Email *</label><input type="email" name="email" placeholder="you@email.com" required /></div>
+        <div class="form-group"><label>Phone</label><input type="tel" name="phone" placeholder="9876543210" maxlength="10" /></div>
+        <div class="form-group">
+          <label>Subject *</label>
+          <select name="subject" required>
+            <option value="">Select a topic</option>
+            <option>Order Inquiry</option><option>Return / Refund</option><option>Bulk Order</option><option>Partnership</option><option>Product Feedback</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Message *</label><textarea name="message" placeholder="Tell us how we can help..." required></textarea></div>
+        <!-- Honeypot: hidden from real visitors, bots tend to fill every field in. -->
+        <input type="text" name="company" id="company" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;" aria-hidden="true" />
+        <button type="submit" class="form-submit" id="contactSubmitBtn">Send Message</button>
+        <div class="form-success" id="formSuccess">Message sent. We'll get back to you within 24 hours.</div>
+        <div class="form-error" id="formError"></div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/products.js"></script>
+<script>
+  window.PAGE = { active: 'contact', cartNav: false };
+</script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/partials.js"></script>
+<script>
+async function submitForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  const s = document.getElementById('formSuccess');
+  const err = document.getElementById('formError');
+  const btn = document.getElementById('contactSubmitBtn');
+  s.style.display = 'none';
+  err.style.display = 'none';
+
+  const fd = new FormData(form);
+  const payload = Object.fromEntries(fd.entries());
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`${API_BASE}/api/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong.');
+    s.style.display = 'block';
+    form.reset();
+    setTimeout(() => s.style.display = 'none', 6000);
+  } catch (e2) {
+    err.textContent = e2.message || 'Could not send your message. Please try again or email us directly.';
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Message';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initAccordionToggle(document.getElementById('faqBtn1'), 'faqA1');
+  initAccordionToggle(document.getElementById('faqBtn2'), 'faqA2');
+  initAccordionToggle(document.getElementById('faqBtn3'), 'faqA3');
+});
+</script>
+</body>
+</html>

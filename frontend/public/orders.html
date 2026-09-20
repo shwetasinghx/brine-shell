@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Orders | Brine & Shell</title>
+  <meta name="description" content="View your Brine & Shell order history, track delivery status, and request a return." />
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://www.brineandshell.com/orders.html" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="icon" type="image/png" href="assets/images/brineandshell.png" />
+  <link rel="apple-touch-icon" href="assets/images/brineandshell.png" />
+  <meta name="theme-color" content="#1C1B3A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="page-hero">
+  <p class="eyebrow">Your Account</p>
+  <h1>My Orders</h1>
+  <p>Track a delivery or request a return on a past order.</p>
+</div>
+
+<div class="account-layout">
+  <div id="accountSignedOut" style="display:none; text-align:center; padding:40px 5%;">
+    <p style="margin-bottom:20px;color:var(--muted)">Sign in with Google to see your orders.</p>
+    <div id="acctGoogleBtn" class="gsi-btn-wrap" style="justify-content:center;display:flex;"></div>
+  </div>
+
+  <div id="accountSignedIn" style="display:none;">
+    <div class="orders-list" id="ordersList"></div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="overlay" id="orderOverlay">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="closeOrderModal()" aria-label="Close order detail">✕</button>
+    <p class="eyebrow">Order Detail</p>
+    <h2 id="odOrderId"></h2>
+    <p class="wt" id="odDate"></p>
+
+    <div class="order-stepper" id="odStepper"></div>
+    <p class="wt" id="odDelivered" style="color:var(--gold-lt,#8a6d2f);font-weight:600;"></p>
+
+    <div class="order-summary" id="odItems"></div>
+
+    <div class="order-summary" id="odShipInfo" style="display:none;">
+      <p style="font-weight:700;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Shipping To</p>
+      <p style="font-size:14px;color:var(--text);margin-bottom:4px;" id="odShipPhone"></p>
+      <p style="font-size:14px;color:var(--text);white-space:pre-wrap;" id="odShipAddress"></p>
+    </div>
+
+    <div id="cancelOrderSection" style="display:none;margin-top:20px;">
+      <button type="button" class="btn-sm" id="odCancelBtn" onclick="toggleCancelConfirm(true)">Cancel Order</button>
+      <p style="font-size:12px;color:var(--muted);margin-top:6px;" id="cancelOrderHint">You can cancel your order until it ships.</p>
+      <div id="cancelConfirmBox" style="display:none;margin-top:12px;padding:14px;border:1.5px solid #ddd;border-radius:8px;background:var(--cream);">
+        <p style="font-weight:600;color:var(--navy);margin-bottom:12px;">Cancel this order? This can't be undone.</p>
+        <div class="form-group">
+          <label>Why are you cancelling? *</label>
+          <textarea id="cancelReason" placeholder="Let us know what happened" oninput="capCancelReasonWords(this)"></textarea>
+          <p id="cancelReasonCount" style="font-size:11px;color:var(--muted);text-align:right;margin-top:4px;">0/100 words</p>
+        </div>
+        <button type="button" class="form-submit" id="cancelConfirmYesBtn" onclick="cancelOrder()">Yes, Cancel Order</button>
+        <button type="button" class="btn-sm" style="background:transparent;color:var(--muted);border:1px solid #ddd;margin-left:8px;" onclick="toggleCancelConfirm(false)">No, Keep Order</button>
+      </div>
+      <div class="form-error" id="cancelOrderError"></div>
+    </div>
+
+    <div id="reviewSection" style="display:none;margin-top:20px;">
+      <p style="font-weight:700;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">Rate Your Products</p>
+      <div id="odReviewsList"></div>
+      <div id="reviewForm" style="display:none;margin-top:14px;padding:14px;border:1.5px solid #ddd;border-radius:8px;background:var(--cream);">
+        <p style="font-weight:700;color:var(--navy);margin-bottom:12px;" id="reviewFormProductName"></p>
+        <div class="form-group">
+          <label>Product Rating *</label>
+          <div class="star-picker" id="reviewStars">
+            <span data-star="1" onclick="selectReviewStar(1)">★</span><span data-star="2" onclick="selectReviewStar(2)">★</span><span data-star="3" onclick="selectReviewStar(3)">★</span><span data-star="4" onclick="selectReviewStar(4)">★</span><span data-star="5" onclick="selectReviewStar(5)">★</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>How was the delivery? *</label>
+          <div class="label-choice-group" id="deliverySpeedGroup">
+            <button type="button" class="label-choice" data-speed="Fast" onclick="selectDeliverySpeed('Fast')">Fast</button>
+            <button type="button" class="label-choice" data-speed="On Time" onclick="selectDeliverySpeed('On Time')">On Time</button>
+            <button type="button" class="label-choice" data-speed="Late" onclick="selectDeliverySpeed('Late')">Late</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Your Review (optional)</label>
+          <textarea id="reviewText" placeholder="What did you think?" oninput="capReviewTextWords(this)"></textarea>
+          <p id="reviewTextCount" style="font-size:11px;color:var(--muted);text-align:right;margin-top:4px;">0/100 words</p>
+        </div>
+        <button class="form-submit" onclick="submitReview()">Submit Review</button>
+        <button type="button" class="btn-sm" style="background:transparent;color:var(--muted);border:1px solid #ddd;margin-left:8px;" onclick="closeReviewForm()">Cancel</button>
+        <div class="form-success" id="reviewSuccess">Thanks! Your review is awaiting approval.</div>
+        <div class="form-error" id="reviewError"></div>
+      </div>
+    </div>
+
+    <div id="returnSection" style="margin-top:20px;">
+      <div id="returnStatusBanner" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;"></div>
+      <button class="btn-sm" id="odReturnBtn" onclick="toggleReturnForm()">Request a Return</button>
+      <div id="returnForm" style="display:none;margin-top:16px;">
+        <div class="form-group">
+          <label>What's the issue? *</label>
+          <textarea id="returnReason" placeholder="Describe the issue with this order..." oninput="capReturnReasonWords(this)"></textarea>
+          <p id="returnReasonCount" style="font-size:11px;color:var(--muted);text-align:right;margin-top:4px;">0/100 words</p>
+        </div>
+        <div class="form-group">
+          <label>Photo of the issue *</label>
+          <input type="file" id="returnImage" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" />
+          <p style="font-size:12px;color:var(--muted);margin-top:5px;">JPG, PNG, WEBP or HEIC, up to 8MB.</p>
+          <p id="returnImageError" style="display:none;font-size:12px;color:#b3261e;margin-top:5px;font-weight:600;"></p>
+        </div>
+        <div class="form-group">
+          <label>Unboxing / issue video *</label>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">
+            Recorded live below, right now -- there's no upload button on purpose, so an old
+            clip or an AI-made video can't be substituted for the real thing.
+            Please say <strong id="videoChallengeText"></strong> out loud somewhere in the clip.
+          </p>
+          <div class="video-recorder-box">
+            <video id="videoPreview" playsinline></video>
+            <div id="recorderControls">
+              <button type="button" class="btn-sm" id="startRecordBtn" onclick="startVideoRecording()">Start Recording</button>
+              <button type="button" class="btn-sm" id="stopRecordBtn" onclick="stopVideoRecording()" style="display:none">Stop Recording</button>
+              <button type="button" class="btn-sm" id="retakeRecordBtn" onclick="retakeVideoRecording()" style="display:none">Retake</button>
+              <span id="recordTimer"></span>
+            </div>
+          </div>
+          <p id="returnVideoError" style="display:none;font-size:12px;color:#b3261e;margin-top:5px;font-weight:600;"></p>
+        </div>
+        <button class="form-submit" onclick="submitReturn()">Submit Return Request</button>
+        <div class="form-success" id="returnSuccess">Return request submitted. We'll be in touch within 24 hours.</div>
+        <div class="form-error" id="returnError"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/products.js"></script>
+<script>
+  window.PAGE = { active: '', cartNav: false };
+</script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/partials.js"></script>
+<script>
+async function loadOrders() {
+  document.getElementById('accountSignedOut').style.display = 'none';
+  document.getElementById('accountSignedIn').style.display = 'block';
+  const list = document.getElementById('ordersList');
+  list.innerHTML = '<p style="text-align:center;color:var(--muted)">Loading your orders…</p>';
+  try {
+    const res = await fetch(`${API_BASE}/api/orders/mine`, { credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load your orders.');
+    if (!data.orders.length) {
+      list.innerHTML = '<p style="text-align:center;color:var(--muted)">No orders yet. <a href="shop.html" style="color:var(--navy);text-decoration:underline;">Start shopping →</a></p>';
+      return;
+    }
+    list.innerHTML = data.orders.map(o => `
+      <div class="order-card" onclick="openOrder('${o.orderId}')">
+        <div>
+          <div class="oc-id">${o.orderId}</div>
+          <div class="oc-meta">${formatDate(o.date)} · ${o.items}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="oc-status" style="${o.status === 'Cancelled' ? 'color:#b3261e' : o.status === 'Delivered' ? 'color:#1e7e34' : ''}">${o.status || 'Order Placed'}</div>
+          ${o.deliveredAt
+            ? `<div class="oc-meta">Delivered ${formatDateTime(o.deliveredAt)}</div>`
+            : `<div class="oc-meta">₹${o.total}</div>`}
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    list.innerHTML = `<p style="text-align:center;color:#842029">${err.message}</p>`;
+  }
+}
+
+function formatDate(iso) {
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  catch { return iso; }
+}
+
+// Exact date + time (e.g. "16 Sept 2026, 6:42 pm") — used for the
+// delivered timestamp, where the precise moment matters.
+function formatDateTime(iso) {
+  try {
+    return new Date(iso).toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+    });
+  } catch { return iso; }
+}
+
+const RETURN_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+const RETURN_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+const RETURN_VIDEO_MIN_SECONDS = 5;
+const RETURN_VIDEO_MAX_SECONDS = 60;
+const RETURN_MAX_IMAGE_MB = 8;
+const RETURN_MAX_VIDEO_MB = 50;
+const RETURN_WINDOW_MS = 2 * 24 * 60 * 60 * 1000; // 2 days, matches backend/routes/returns.js
+
+let currentOrderId = null;
+
+async function openOrder(orderId) {
+  currentOrderId = orderId;
+  document.getElementById('odOrderId').textContent = orderId;
+  document.getElementById('odDate').textContent = '';
+  document.getElementById('odStepper').innerHTML = '';
+  document.getElementById('odDelivered').textContent = '';
+  document.getElementById('odItems').innerHTML = 'Loading…';
+  document.getElementById('odShipInfo').style.display = 'none';
+  document.getElementById('reviewSection').style.display = 'none';
+  document.getElementById('odReviewsList').innerHTML = '';
+  closeReviewForm();
+  document.getElementById('cancelOrderSection').style.display = 'none';
+  document.getElementById('cancelOrderError').style.display = 'none';
+  const odCancelBtnReset = document.getElementById('odCancelBtn');
+  odCancelBtnReset.disabled = false;
+  odCancelBtnReset.textContent = 'Cancel Order';
+  odCancelBtnReset.style.display = 'inline-block';
+  document.getElementById('cancelConfirmBox').style.display = 'none';
+  document.getElementById('cancelOrderHint').style.display = 'block';
+  document.getElementById('cancelReason').value = '';
+  document.getElementById('cancelReasonCount').textContent = '0/100 words';
+  document.getElementById('returnSection').style.display = 'block';
+  document.getElementById('odReturnBtn').style.display = 'inline-block';
+  document.getElementById('returnStatusBanner').style.display = 'none';
+  document.getElementById('returnForm').style.display = 'none';
+  document.getElementById('returnSuccess').style.display = 'none';
+  document.getElementById('returnError').style.display = 'none';
+  document.getElementById('returnReason').value = '';
+  document.getElementById('returnReasonCount').textContent = '0/100 words';
+  document.getElementById('returnImage').value = '';
+  retakeVideoRecording();
+  document.getElementById('returnImageError').style.display = 'none';
+  document.getElementById('returnVideoError').style.display = 'none';
+  document.getElementById('orderOverlay').classList.add('open');
+
+  try {
+    const [res] = await Promise.all([
+      fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, { credentials: 'include' }),
+      window.PRODUCTS_READY,
+    ]);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load this order.');
+    document.getElementById('odDate').textContent = formatDate(data.order.date);
+    document.getElementById('odDelivered').textContent = '';
+
+    if (data.order.status === 'Cancelled') {
+      // Cancelled sits outside the four-stage progression -- show a
+      // clear notice instead of a stepper with nothing checked off,
+      // and there's nothing left here to request a return on.
+      document.getElementById('odStepper').innerHTML = '';
+      const notice = document.getElementById('odDelivered');
+      notice.textContent = 'This order was cancelled.';
+      notice.style.color = '#b3261e';
+      document.getElementById('returnSection').style.display = 'none';
+    } else {
+      const preShip = !data.order.status || data.order.status === 'Order Placed';
+      document.getElementById('cancelOrderSection').style.display = preShip ? 'block' : 'none';
+      document.getElementById('odStepper').innerHTML = data.stages.map(s => `
+        <div class="step ${s.done ? 'done' : ''}">
+          <div class="step-dot">${s.done ? '✓' : ''}</div>
+          <div class="step-label">${s.label}</div>
+        </div>`).join('');
+      const deliveredNotice = document.getElementById('odDelivered');
+      deliveredNotice.style.color = data.order.deliveredAt ? '#1e7e34' : '';
+      deliveredNotice.textContent = data.order.deliveredAt
+        ? `Delivered on ${formatDateTime(data.order.deliveredAt)}`
+        : '';
+      applyReturnEligibility(data.order, data.returnStatus);
+    }
+
+    document.getElementById('odItems').innerHTML = `<div class="order-row"><span>${data.order.items}</span><span>₹${data.order.total}</span></div>`;
+    renderOrderReviews(data.order, data.reviewStatuses || {}, data.returnStatus);
+    if (data.order.phone || data.order.address) {
+      document.getElementById('odShipPhone').textContent = data.order.phone ? `Phone: ${data.order.phone}` : '';
+      document.getElementById('odShipAddress').textContent = data.order.address || 'No delivery address on file for this order.';
+      document.getElementById('odShipInfo').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('odItems').innerHTML = `<p style="color:#842029">${err.message}</p>`;
+  }
+}
+
+// Swaps the "Cancel Order" button for an inline "Cancel this order?
+// / Yes / No" box, instead of the browser's own unstyled confirm()
+// popup -- same pattern as the rest of this page's forms.
+function toggleCancelConfirm(open) {
+  document.getElementById('odCancelBtn').style.display = open ? 'none' : 'inline-block';
+  document.getElementById('cancelOrderHint').style.display = open ? 'none' : 'block';
+  document.getElementById('cancelConfirmBox').style.display = open ? 'block' : 'none';
+  document.getElementById('cancelOrderError').style.display = 'none';
+  if (!open) {
+    document.getElementById('cancelReason').value = '';
+    document.getElementById('cancelReasonCount').textContent = '0/100 words';
+  }
+}
+
+const CANCEL_REASON_MAX_WORDS = 100;
+function capCancelReasonWords(el) {
+  const words = el.value.trim().split(/\s+/).filter(Boolean);
+  if (words.length > CANCEL_REASON_MAX_WORDS) {
+    el.value = words.slice(0, CANCEL_REASON_MAX_WORDS).join(' ');
+  }
+  const count = el.value.trim() ? el.value.trim().split(/\s+/).filter(Boolean).length : 0;
+  document.getElementById('cancelReasonCount').textContent = `${count}/${CANCEL_REASON_MAX_WORDS} words`;
+}
+
+// Cancels the order via the server, which independently re-checks the
+// current status before allowing it (see the route for why: the copy
+// of "status" this page loaded can be a few minutes stale). If it's
+// too late, the server refuses with a clear reason and nothing here
+// changes -- the order stays exactly as it was.
+async function cancelOrder() {
+  const errEl = document.getElementById('cancelOrderError');
+  errEl.style.display = 'none';
+  const reason = document.getElementById('cancelReason').value.trim();
+  if (!reason) {
+    errEl.textContent = "Please tell us why you're cancelling.";
+    errEl.style.display = 'block';
+    return;
+  }
+  // The visible button at this point is "Yes, Cancel Order" inside the
+  // confirm box, not the (hidden) original "Cancel Order" trigger --
+  // disable/relabel that one so the click actually shows feedback.
+  const btn = document.getElementById('cancelConfirmYesBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Cancelling…';
+  try {
+    const res = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(currentOrderId)}/cancel`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not cancel this order.');
+    loadOrders();
+    openOrder(currentOrderId);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+// Returns can only be requested once an order has actually arrived,
+// and only for a short window after -- not indefinitely, and not
+// while it's still in transit. This runs before the request-status
+// check below, which only matters once one has already been filed.
+function applyReturnEligibility(order, returnStatus) {
+  if (returnStatus) {
+    applyReturnStatus(returnStatus);
+    return;
+  }
+  const banner = document.getElementById('returnStatusBanner');
+  const btn = document.getElementById('odReturnBtn');
+  if (order.status !== 'Delivered') {
+    banner.style.display = 'none';
+    btn.style.display = 'none';
+    return;
+  }
+  const deliveredAt = order.deliveredAt ? new Date(order.deliveredAt) : null;
+  const withinWindow = deliveredAt && !Number.isNaN(deliveredAt.getTime()) && (Date.now() - deliveredAt.getTime()) <= RETURN_WINDOW_MS;
+  if (!withinWindow) {
+    btn.style.display = 'none';
+    banner.style.display = 'block';
+    banner.style.background = '#f0eee8';
+    banner.style.color = 'var(--muted)';
+    banner.textContent = 'The 2-day return window for this order has closed.';
+    return;
+  }
+  banner.style.display = 'none';
+  btn.style.display = 'inline-block';
+}
+
+// One request per order, period -- the button stays hidden once any
+// request exists, whatever the outcome. A cancelled request (bad or
+// incomplete info) is a support conversation from here, not something
+// the customer can just resubmit themselves.
+function applyReturnStatus(returnStatus) {
+  const banner = document.getElementById('returnStatusBanner');
+  const btn = document.getElementById('odReturnBtn');
+  if (!returnStatus) {
+    banner.style.display = 'none';
+    btn.style.display = 'inline-block';
+    return;
+  }
+  btn.style.display = 'none';
+  banner.style.display = 'block';
+  if (returnStatus === 'Approved') {
+    banner.style.background = '#e6f4ea';
+    banner.style.color = '#1e7e34';
+    banner.textContent = 'Return approved. We\'ll follow up by email with next steps.';
+  } else if (returnStatus === 'Cancelled') {
+    banner.style.background = '#fdecea';
+    banner.style.color = '#b3261e';
+    banner.textContent = 'Your return request was cancelled. Contact us if you have questions about this order.';
+  } else {
+    banner.style.background = '#fdecd2';
+    banner.style.color = '#b35c00';
+    banner.textContent = 'Return requested. Waiting for approval.';
+  }
+}
+
+function closeOrderModal() {
+  document.getElementById('orderOverlay').classList.remove('open');
+  stopVideoCameraIfRunning();
+}
+
+function toggleReturnForm() {
+  const f = document.getElementById('returnForm');
+  const opening = f.style.display === 'none';
+  f.style.display = opening ? 'block' : 'none';
+  if (opening) {
+    // A fresh, unpredictable-enough phrase per order+day -- not meant
+    // to be cryptographically unforgeable, just something a stock/old/
+    // AI-generated clip won't already contain, for the admin to check
+    // the recording against.
+    document.getElementById('videoChallengeText').textContent = `"${currentOrderId} - ${formatDate(new Date().toISOString())}"`;
+  } else {
+    stopVideoCameraIfRunning();
+  }
+}
+
+/* ── UNBOXING VIDEO: recorded live in-browser, never uploaded ──
+   A file picker would let a customer attach an old clip, someone
+   else's clip, or an AI-generated "unboxing" -- there'd be nothing to
+   tell it apart from a real one, since real tamper/deepfake detection
+   isn't something a small self-hosted store can run reliably (or at
+   all). Capturing straight from the camera at submission time, and
+   asking the customer to say the order id + today's date out loud,
+   doesn't make faking it *impossible* -- it makes it enough extra
+   effort that nobody bothers for a return, and gives the admin a
+   concrete detail to check the footage against during manual review. */
+let videoRecorder = null;
+let videoStream = null;
+let recordedChunks = [];
+let recordedVideoBlob = null;
+let recordTimerInterval = null;
+let recordSecondsElapsed = 0;
+
+function pickVideoMimeType() {
+  const candidates = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
+  return candidates.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+
+function stopVideoCameraIfRunning() {
+  if (videoRecorder && videoRecorder.state !== 'inactive') videoRecorder.stop();
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  clearInterval(recordTimerInterval);
+}
+
+async function startVideoRecording() {
+  const err = document.getElementById('returnVideoError');
+  err.style.display = 'none';
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    err.textContent = "Your browser can't record video here -- please try a recent Chrome, Safari or Firefox.";
+    err.style.display = 'block';
+    return;
+  }
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+  } catch {
+    err.textContent = 'Camera and microphone access is needed to record the unboxing video.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const preview = document.getElementById('videoPreview');
+  preview.srcObject = videoStream;
+  preview.muted = true;
+  preview.classList.add('has-content');
+  preview.play().catch(() => {});
+
+  recordedChunks = [];
+  recordedVideoBlob = null;
+  const mimeType = pickVideoMimeType();
+  try {
+    videoRecorder = new MediaRecorder(videoStream, mimeType ? { mimeType } : undefined);
+  } catch {
+    err.textContent = 'Could not start recording on this device. Please try a different browser.';
+    err.style.display = 'block';
+    videoStream.getTracks().forEach(t => t.stop());
+    return;
+  }
+  videoRecorder.ondataavailable = (e) => { if (e.data && e.data.size) recordedChunks.push(e.data); };
+  videoRecorder.onstop = () => {
+    recordedVideoBlob = new Blob(recordedChunks, { type: videoRecorder.mimeType || 'video/webm' });
+    if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+    preview.srcObject = null;
+    preview.muted = false;
+    preview.controls = true;
+    preview.src = URL.createObjectURL(recordedVideoBlob);
+    preview.play().catch(() => {});
+  };
+  videoRecorder.start();
+
+  recordSecondsElapsed = 0;
+  document.getElementById('startRecordBtn').style.display = 'none';
+  document.getElementById('retakeRecordBtn').style.display = 'none';
+  const stopBtn = document.getElementById('stopRecordBtn');
+  stopBtn.style.display = 'inline-block';
+  stopBtn.disabled = true;
+  const timerEl = document.getElementById('recordTimer');
+  timerEl.textContent = `Recording... 0:00 (min ${RETURN_VIDEO_MIN_SECONDS}s)`;
+  recordTimerInterval = setInterval(() => {
+    recordSecondsElapsed++;
+    const m = Math.floor(recordSecondsElapsed / 60), s = String(recordSecondsElapsed % 60).padStart(2, '0');
+    timerEl.textContent = `Recording... ${m}:${s}`;
+    if (recordSecondsElapsed >= RETURN_VIDEO_MIN_SECONDS) stopBtn.disabled = false;
+    if (recordSecondsElapsed >= RETURN_VIDEO_MAX_SECONDS) stopVideoRecording();
+  }, 1000);
+}
+
+function stopVideoRecording() {
+  if (recordSecondsElapsed < RETURN_VIDEO_MIN_SECONDS) return; // stop button is disabled until then anyway
+  if (videoRecorder && videoRecorder.state !== 'inactive') videoRecorder.stop();
+  clearInterval(recordTimerInterval);
+  document.getElementById('stopRecordBtn').style.display = 'none';
+  document.getElementById('retakeRecordBtn').style.display = 'inline-block';
+  document.getElementById('recordTimer').textContent = `Recorded ${recordSecondsElapsed}s. Looks good, or retake below.`;
+}
+
+function retakeVideoRecording() {
+  stopVideoCameraIfRunning();
+  recordedVideoBlob = null;
+  recordedChunks = [];
+  const preview = document.getElementById('videoPreview');
+  preview.pause();
+  preview.removeAttribute('src');
+  preview.load();
+  preview.controls = false;
+  preview.classList.remove('has-content');
+  document.getElementById('recordTimer').textContent = '';
+  document.getElementById('retakeRecordBtn').style.display = 'none';
+  document.getElementById('startRecordBtn').style.display = 'inline-block';
+}
+
+// Same "cap while typing" pattern as the saved-address field on
+// account.html -- once 100 words is hit, further typing is just
+// dropped rather than letting the box grow into an essay. The
+// backend re-checks this too (the real gate), this is just so the
+// customer sees the limit land instead of finding out after submit.
+const RETURN_REASON_MAX_WORDS = 100;
+function capReturnReasonWords(el) {
+  const words = el.value.trim().split(/\s+/).filter(Boolean);
+  if (words.length > RETURN_REASON_MAX_WORDS) {
+    el.value = words.slice(0, RETURN_REASON_MAX_WORDS).join(' ');
+  }
+  const count = el.value.trim() ? el.value.trim().split(/\s+/).filter(Boolean).length : 0;
+  document.getElementById('returnReasonCount').textContent = `${count}/${RETURN_REASON_MAX_WORDS} words`;
+}
+
+/* ── PRODUCT REVIEWS ──
+   One row per product actually in this order (data.order.itemIds --
+   see backend/routes/orders.js), each either offering "Write a
+   Review" or showing the pending/approved/rejected status of one
+   already filed. Only shown once the order is Delivered -- reviewing
+   something before it's arrived doesn't make sense, and there's
+   nothing to check the review against server-side before then either. */
+// Escapes text before it's interpolated into an HTML string, so a
+// product name (or any other dynamic value) can never break out of an
+// attribute or tag -- used anywhere we build markup from data instead
+// of setting .textContent directly.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const REVIEW_TEXT_MAX_WORDS = 100;
+const DELIVERY_SPEEDS = ['Fast', 'On Time', 'Late'];
+let reviewingProductId = null;
+let selectedReviewStars = 0;
+let selectedDeliverySpeed = '';
+
+function renderOrderReviews(order, reviewStatuses, returnStatus) {
+  const section = document.getElementById('reviewSection');
+  const list = document.getElementById('odReviewsList');
+  // An approved return means the product went back -- nothing left here
+  // to review. A still-pending return request doesn't block this (they
+  // still have the product until/unless it's approved), only "Approved"
+  // does.
+  if (order.status !== 'Delivered' || !order.itemIds || !order.itemIds.length || returnStatus === 'Approved') {
+    section.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  section.style.display = 'block';
+  list.innerHTML = order.itemIds.map(id => {
+    const product = PRODUCTS.find(p => p.id === id);
+    const name = product ? product.name : id;
+    const status = reviewStatuses[id];
+    // Deliberately not showing Pending/Approved/Rejected here -- moderation
+    // is silent by design (see the admin "Notify customer" change), so the
+    // customer just sees that their review is in, not the verdict on it.
+    const action = !status
+      ? `<button type="button" class="btn-sm" data-review-product-id="${escapeHtml(id)}" data-review-product-name="${escapeHtml(name)}">Write a Review</button>`
+      : `<span class="review-status-pill submitted">Review submitted</span>`;
+    return `<div class="review-item-row"><span>${escapeHtml(name)}</span>${action}</div>`;
+  }).join('');
+}
+
+// Single delegated listener for every "Write a Review" button, present or
+// future -- reads the product id/name off data-* attributes rather than
+// having them baked into an inline onclick string, which is what broke
+// (product names get JSON-embedded text with real quote characters in it,
+// and there's no safe way to nest that inside an already double-quoted
+// HTML attribute).
+document.getElementById('odReviewsList').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-review-product-id]');
+  if (!btn) return;
+  openReviewForm(btn.dataset.reviewProductId, btn.dataset.reviewProductName);
+});
+
+function openReviewForm(productId, productName) {
+  reviewingProductId = productId;
+  selectedReviewStars = 0;
+  selectedDeliverySpeed = '';
+  document.getElementById('reviewFormProductName').textContent = productName;
+  document.getElementById('reviewText').value = '';
+  document.getElementById('reviewTextCount').textContent = `0/${REVIEW_TEXT_MAX_WORDS} words`;
+  document.getElementById('reviewError').style.display = 'none';
+  document.getElementById('reviewSuccess').style.display = 'none';
+  paintReviewStars();
+  document.querySelectorAll('#deliverySpeedGroup .label-choice').forEach(btn => btn.classList.remove('active'));
+  document.getElementById('reviewForm').style.display = 'block';
+  document.getElementById('reviewForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeReviewForm() {
+  reviewingProductId = null;
+  const form = document.getElementById('reviewForm');
+  if (form) form.style.display = 'none';
+}
+
+function selectReviewStar(n) {
+  selectedReviewStars = n;
+  paintReviewStars();
+}
+
+function paintReviewStars() {
+  document.querySelectorAll('#reviewStars span').forEach(el => {
+    el.classList.toggle('filled', Number(el.dataset.star) <= selectedReviewStars);
+  });
+}
+
+function selectDeliverySpeed(speed) {
+  selectedDeliverySpeed = speed;
+  document.querySelectorAll('#deliverySpeedGroup .label-choice').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.speed === speed);
+  });
+}
+
+function capReviewTextWords(el) {
+  const words = el.value.trim().split(/\s+/).filter(Boolean);
+  if (words.length > REVIEW_TEXT_MAX_WORDS) {
+    el.value = words.slice(0, REVIEW_TEXT_MAX_WORDS).join(' ');
+  }
+  const count = el.value.trim() ? el.value.trim().split(/\s+/).filter(Boolean).length : 0;
+  document.getElementById('reviewTextCount').textContent = `${count}/${REVIEW_TEXT_MAX_WORDS} words`;
+}
+
+async function submitReview() {
+  const err = document.getElementById('reviewError');
+  const ok = document.getElementById('reviewSuccess');
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  if (!selectedReviewStars) {
+    err.textContent = 'Please give the product a star rating.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!selectedDeliverySpeed) {
+    err.textContent = 'Please say how the delivery was.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const btn = document.querySelector('#reviewForm .form-submit');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Submitting…';
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: currentOrderId,
+        productId: reviewingProductId,
+        productRating: selectedReviewStars,
+        deliverySpeed: selectedDeliverySpeed,
+        text: document.getElementById('reviewText').value.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit your review.');
+    ok.style.display = 'block';
+    setTimeout(() => openOrder(currentOrderId), 900); // reloads the order, which repaints this product as "Awaiting approval"
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+// Checks a file's type against an allowed list and its size against
+// a limit (in MB), writing a specific red message into the given
+// error slot when either fails -- true means the file is fine.
+function validateReturnFile(file, allowedTypes, maxMB, errEl, label) {
+  errEl.style.display = 'none';
+  const baseType = (file.type || '').split(';')[0];
+  if (!allowedTypes.includes(baseType)) {
+    errEl.textContent = `That file type isn't accepted for the ${label}. Please use ${allowedTypes.map(t => t.split('/')[1].toUpperCase()).join(', ')}.`;
+    errEl.style.display = 'block';
+    return false;
+  }
+  if (file.size > maxMB * 1024 * 1024) {
+    errEl.textContent = `That ${label} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). The limit is ${maxMB}MB, so please choose a smaller file.`;
+    errEl.style.display = 'block';
+    return false;
+  }
+  return true;
+}
+
+async function submitReturn() {
+  const reason = document.getElementById('returnReason').value.trim();
+  const imageInput = document.getElementById('returnImage');
+  const imageFile = imageInput.files[0];
+  const imageErr = document.getElementById('returnImageError');
+  const videoErr = document.getElementById('returnVideoError');
+  const err = document.getElementById('returnError');
+  const ok = document.getElementById('returnSuccess');
+  err.style.display = 'none';
+  ok.style.display = 'none';
+  imageErr.style.display = 'none';
+  videoErr.style.display = 'none';
+
+  if (!reason) {
+    err.textContent = 'Please describe the issue.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!imageFile) {
+    imageErr.textContent = 'Please attach a photo of the issue.';
+    imageErr.style.display = 'block';
+    return;
+  }
+  if (!recordedVideoBlob) {
+    videoErr.textContent = 'Please record the unboxing video below before submitting.';
+    videoErr.style.display = 'block';
+    return;
+  }
+  if (recordSecondsElapsed < RETURN_VIDEO_MIN_SECONDS) {
+    videoErr.textContent = `That recording is too short -- please record at least ${RETURN_VIDEO_MIN_SECONDS} seconds.`;
+    videoErr.style.display = 'block';
+    return;
+  }
+  // Type + size checked client-side first, with a specific message
+  // per problem, before ever hitting the network -- the server
+  // re-checks both regardless, this is just faster feedback. The
+  // recorded blob needs a filename+extension for FormData/multer, so
+  // one is derived from its actual mimetype here.
+  const videoExt = (recordedVideoBlob.type || '').includes('mp4') ? 'mp4' : 'webm';
+  const videoFile = new File([recordedVideoBlob], `unboxing-${Date.now()}.${videoExt}`, { type: recordedVideoBlob.type || 'video/webm' });
+  const imageOk = validateReturnFile(imageFile, RETURN_IMAGE_TYPES, RETURN_MAX_IMAGE_MB, imageErr, 'photo');
+  const videoOk = validateReturnFile(videoFile, RETURN_VIDEO_TYPES, RETURN_MAX_VIDEO_MB, videoErr, 'video');
+  if (!imageOk || !videoOk) return;
+
+  const btn = document.querySelector('#returnForm .form-submit');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Submitting…';
+  try {
+    const body = new FormData();
+    body.append('orderId', currentOrderId);
+    body.append('reason', reason);
+    body.append('challenge', document.getElementById('videoChallengeText').textContent);
+    body.append('image', imageFile);
+    body.append('video', videoFile);
+    // No Content-Type header here -- the browser sets the multipart
+    // boundary itself; setting it manually breaks the upload.
+    const res = await fetch(`${API_BASE}/api/returns`, {
+      method: 'POST',
+      credentials: 'include',
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit your return request.');
+    ok.style.display = 'block';
+    document.getElementById('returnReason').value = '';
+    document.getElementById('returnReasonCount').textContent = '0/100 words';
+    imageInput.value = '';
+    retakeVideoRecording();
+    document.getElementById('returnForm').style.display = 'none';
+    applyReturnStatus('Requested');
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+document.getElementById('orderOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeOrderModal();
+});
+
+document.addEventListener('auth:changed', (e) => {
+  if (e.detail.user) {
+    loadOrders();
+  } else {
+    document.getElementById('accountSignedIn').style.display = 'none';
+    document.getElementById('accountSignedOut').style.display = 'block';
+    whenGoogleReady(() => renderGoogleButton('acctGoogleBtn'));
+  }
+});
+</script>
+</body>
+</html>

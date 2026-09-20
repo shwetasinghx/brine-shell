@@ -1,0 +1,53 @@
+{
+  "config": {
+    "freeDeliveryThreshold": 499,
+    "deliveryFee": 49,
+    "currency": "INR"
+  },
+  "products": [
+    {
+      "id": "cubes",
+      "name": "Peanut Butter Cubes",
+      "price": 299,
+      "wt": "10 cubes",
+      "badge": "Bestseller",
+      "bc": "badge-default",
+      "img": "assets/images/peanut-butter-cubes.jpeg",
+      "tags": ["High Protein", "Non-GMO", "No Preservatives", "Easy to Spread"],
+      "desc": "10 individually wrapped cubes. Portioned perfection for your workout or morning toast."
+    },
+    {
+      "id": "dual",
+      "name": "Dual Flavor Jar",
+      "price": 549,
+      "wt": "400g",
+      "badge": "New",
+      "bc": "badge-new",
+      "img": "assets/images/peanut-butter-jar.jpeg",
+      "tags": ["High Protein", "Non-GMO", "No Preservatives", "Easy Scooping"],
+      "desc": "2 flavors, 1 jar. Crunchy Peanut Butter + Protein Peanut Butter. Wide-mouth for easy scooping."
+    },
+    {
+      "id": "fuel",
+      "name": "Peanut Butter Fuel Pack",
+      "price": 99,
+      "wt": "30g sachet",
+      "badge": null,
+      "bc": "",
+      "img": "assets/images/peanut-butter-shashe.jpeg",
+      "tags": ["High Protein", "Non-GMO", "No Preservatives", "Easy to Spread"],
+      "desc": "On-the-go 30g sachet for athletes, hikers, commuters, or anyone who needs quick fuel."
+    },
+    {
+      "id": "ceramic",
+      "name": "Peanut Butter Ceramic Jar",
+      "price": 699,
+      "wt": "500g",
+      "badge": "Premium",
+      "bc": "badge-premium",
+      "img": "assets/images/peanut-butter-ceramic.jpeg",
+      "tags": ["High Protein", "Non-GMO", "No Preservatives", "Easy to Spread"],
+      "desc": "Premium peanut-shaped ceramic jar. Made with 100% real peanuts. A kitchen showpiece."
+    }
+  ]
+}

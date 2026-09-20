@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop | Brine & Shell</title>
+  <meta name="description" content="Shop Brine & Shell peanut butter: cubes, dual-flavor jars, fuel packs, and our ceramic jar. 100% real peanuts, no palm oil, no preservatives. Free delivery above ₹499." />
+  <link rel="canonical" href="https://www.brineandshell.com/shop.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Shop | Brine & Shell" />
+  <meta property="og:description" content="100% real peanuts, no palm oil, no preservatives. Free delivery above ₹499." />
+  <meta property="og:image" content="https://www.brineandshell.com/assets/images/brineandshell.png" />
+  <meta property="og:url" content="https://www.brineandshell.com/shop.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/png" href="assets/images/brineandshell.png" />
+  <link rel="apple-touch-icon" href="assets/images/brineandshell.png" />
+  <meta name="theme-color" content="#1C1B3A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="page-hero">
+  <p class="eyebrow">Brine &amp; Shell Store</p>
+  <h1>Our Products</h1>
+  <p>Choose your perfect peanut butter. Free delivery on orders above <span data-fd-amount>₹499</span>.</p>
+</div>
+
+<div class="shop-layout">
+  <div class="shop-products">
+    <div class="products-grid" id="productsGrid"></div>
+  </div>
+  <aside class="cart-sidebar">
+    <h3>
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#1C1B3A" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Your Cart
+    </h3>
+    <div id="cartBody"><p class="cart-empty">Your cart is empty.</p></div>
+    <div id="cartFooter" style="display:none">
+      <div class="cart-total-row"><span>Subtotal</span><span id="cartSub">₹0</span></div>
+      <div class="cart-total-row"><span style="color:var(--muted);font-size:13px">Delivery</span><span id="cartDel" style="color:var(--muted);font-size:13px">₹0</span></div>
+      <div class="cart-total-row grand"><span>Total</span><span id="cartGrand">₹0</span></div>
+      <button class="cart-checkout-btn" onclick="openCheckout()">Proceed to Pay</button>
+      <p class="pay-note">Secured by Razorpay · UPI · Cards · PhonePe · Google Pay</p>
+    </div>
+
+    <div id="wishlistSection" style="display:none;margin-top:28px">
+      <h3>
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#1C1B3A" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        Saved for Later
+      </h3>
+      <div id="wishlistBody"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCheckout()" aria-label="Close checkout">✕</button>
+    <p class="eyebrow">Checkout</p>
+    <h2>Review &amp; Pay</h2>
+    <div class="form-group"><label>Full Name</label><input type="text" id="cName" placeholder="Riya Sharma" /></div>
+    <div class="form-row-2">
+      <div class="form-group"><label>Email</label><input type="email" id="cEmail" placeholder="you@email.com" /></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="cPhone" placeholder="9876543210" maxlength="10" /></div>
+    </div>
+    <div class="form-group" id="savedAddressPicker" style="display:none">
+      <label>Deliver To</label>
+      <select id="cSavedAddress" onchange="onSavedAddressChange()"></select>
+    </div>
+    <div class="form-group"><label>Delivery Address</label><textarea id="cAddress" placeholder="House no., street, area, city, state, PIN code" rows="3"></textarea></div>
+    <div class="order-summary" id="orderSummary"></div>
+    <button class="rzp-btn" onclick="initiateRazorpay()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Pay Securely with Razorpay
+    </button>
+    <div class="pay-chips">
+      <span class="pay-chip">Cards</span><span class="pay-chip">UPI</span><span class="pay-chip">PhonePe</span><span class="pay-chip">G Pay</span><span class="pay-chip">NetBanking</span>
+    </div>
+  </div>
+</div>
+
+<!-- SIGN-IN REQUIRED MODAL (checkout is only for signed-in customers) -->
+<div class="overlay" id="signinOverlay">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <button class="modal-close" onclick="closeSigninPrompt()" aria-label="Close">✕</button>
+    <p class="eyebrow">Almost there</p>
+    <h2>Sign in to check out</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:22px">
+      We ask you to sign in before placing an order so it's always saved to your account.
+      You'll be able to track it and request a return from "My Orders".
+    </p>
+    <div id="shopSigninBtn" class="gsi-btn-wrap" style="justify-content:center;margin:0 auto"></div>
+  </div>
+</div>
+
+<!-- READ REVIEWS MODAL -->
+<div class="overlay" id="reviewsOverlay">
+  <div class="modal" style="max-width:460px;max-height:80vh;overflow-y:auto;">
+    <button class="modal-close" onclick="closeReviewsModal()" aria-label="Close reviews">✕</button>
+    <p class="eyebrow">Customer Reviews</p>
+    <h2 id="reviewsModalTitle" style="margin-bottom:14px;"></h2>
+    <div id="reviewsModalBody"></div>
+  </div>
+</div>
+
+<div id="toast">Order placed successfully. Thank you.</div>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/products.js"></script>
+<script>
+  window.PAGE = { active: 'shop', cartNav: true };
+</script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/partials.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/wishlist.js"></script>
+<script>
+/* PRODUCTS and SITE_CONFIG now come from js/products.js — the single
+   source of truth shared with index.html. Do not redefine them here. */
+
+/* ── CART ──
+   Backed by localStorage (js/cart.js) so it survives page reloads —
+   including clicking the "Cart" nav link itself. */
+let cart = getCart();
+
+function sub() { return Object.entries(cart).reduce((s,[id,q])=>s+(PRODUCTS.find(p=>p.id===id).price*q),0); }
+function del() { const s=sub(); return s===0?0:s>=SITE_CONFIG.freeDeliveryThreshold?0:SITE_CONFIG.deliveryFee; }
+function items() { return Object.entries(cart).filter(([,q])=>q>0).map(([id,q])=>({...PRODUCTS.find(p=>p.id===id),q})); }
+
+/* ── PRODUCT REVIEWS (read side) ──
+   Fetched once for every product in one request (see
+   backend/routes/reviews.js's /summary endpoint) so the shop grid
+   doesn't fire a request per card. Empty until at least one review
+   has been submitted AND approved by the admin. */
+let REVIEW_SUMMARIES = {};
+async function loadReviewSummaries() {
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews/summary`);
+    const data = await res.json();
+    if (res.ok && data.ok) REVIEW_SUMMARIES = data.summaries || {};
+  } catch { /* no reviews yet, or offline -- cards just show "No reviews yet" */ }
+}
+
+function renderStarDisplay(avg) {
+  const rounded = Math.round(avg || 0);
+  return Array.from({ length: 5 }, (_, i) => i < rounded ? '★' : '<span class="star-empty">★</span>').join('');
+}
+
+function renderRatingLine(productId) {
+  const s = REVIEW_SUMMARIES[productId];
+  if (!s || !s.count) {
+    return `<div class="pc-rating"><span class="star-display">${renderStarDisplay(0)}</span><span>No reviews yet</span></div>`;
+  }
+  return `<div class="pc-rating"><span class="star-display">${renderStarDisplay(s.avgRating)}</span><span>${s.avgRating.toFixed(1)} (${s.count})</span><button onclick="openReviewsModal('${productId}')">Read Reviews</button></div>`;
+}
+
+function deliveryBadgeClass(speed) {
+  if (speed === 'Fast') return 'fast';
+  if (speed === 'Late') return 'late';
+  return 'ontime';
+}
+
+async function openReviewsModal(productId) {
+  const product = PRODUCTS.find(p => p.id === productId);
+  document.getElementById('reviewsModalTitle').textContent = product ? product.name : 'Reviews';
+  const body = document.getElementById('reviewsModalBody');
+  body.innerHTML = '<p style="color:var(--muted)">Loading reviews…</p>';
+  document.getElementById('reviewsOverlay').classList.add('open');
+
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews/product/${encodeURIComponent(productId)}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load reviews.');
+
+    const s = data.summary;
+    const total = s.delivery.Fast + s.delivery['On Time'] + s.delivery.Late;
+    const pct = (n) => total ? Math.round((n / total) * 100) : 0;
+    const summaryHtml = total ? `
+      <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream-dk);">
+        <p style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">${s.avgRating.toFixed(1)} out of 5 &middot; ${s.count} review${s.count === 1 ? '' : 's'}</p>
+        <p style="font-size:13px;color:var(--muted);">Delivery: ${pct(s.delivery.Fast)}% said fast, ${pct(s.delivery['On Time'])}% on time, ${pct(s.delivery.Late)}% late.</p>
+      </div>` : '';
+
+    if (!data.reviews.length) {
+      body.innerHTML = summaryHtml + '<p style="color:var(--muted)">No reviews yet for this product.</p>';
+      return;
+    }
+    body.innerHTML = summaryHtml + data.reviews.map(r => `
+      <div class="review-card">
+        <div class="review-card-head">
+          <span class="star-display">${renderStarDisplay(r.productRating)}</span>
+          <span class="review-delivery-badge ${deliveryBadgeClass(r.deliverySpeed)}">${r.deliverySpeed} delivery</span>
+        </div>
+        <p style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:2px;">${r.name} &middot; ${formatReviewDate(r.date)}</p>
+        ${r.text ? `<p style="font-size:14px;color:var(--text);">${r.text}</p>` : ''}
+      </div>`).join('');
+  } catch (err) {
+    body.innerHTML = `<p style="color:#842029">${err.message}</p>`;
+  }
+}
+
+function closeReviewsModal() {
+  document.getElementById('reviewsOverlay').classList.remove('open');
+}
+
+function formatReviewDate(iso) {
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  catch { return ''; }
+}
+
+/* ── RENDER PRODUCTS ── */
+function renderProducts() {
+  document.getElementById('productsGrid').innerHTML = PRODUCTS.map(p=>`
+    <div class="product-card">
+      <div class="pc-img">
+        <img src="${p.img}" alt="${p.name}" width="600" height="600" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="ph" style="display:none"><p>${p.name.split(' ')[0]}</p></div>
+        ${p.badge?`<span class="pc-badge ${p.bc}">${p.badge}</span>`:''}
+      </div>
+      <div class="pc-body">
+        <h3>${p.name}</h3><p class="wt">${p.wt}</p>${renderRatingLine(p.id)}<p>${p.desc}</p>
+        <div class="pc-tags">${p.tags.map(t=>`<span class="pc-tag">${t}</span>`).join('')}</div>
+        <div class="pc-footer">
+          <span class="price">₹${p.price}</span>
+          <div class="qty-ctrl" id="qc-${p.id}" style="display:none">
+            <button class="qty-btn" onclick="chg('${p.id}',-1)" aria-label="Decrease quantity">−</button>
+            <span class="qty-num" id="qn-${p.id}">0</span>
+            <button class="qty-btn" onclick="chg('${p.id}',1)" aria-label="Increase quantity">+</button>
+          </div>
+          <button class="btn-sm" id="atc-${p.id}" onclick="add('${p.id}')">Add to Cart</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function add(id) {
+  cart[id]=(cart[id]||0)+1;
+  saveCart(cart);
+  document.getElementById(`qn-${id}`).textContent=cart[id];
+  document.getElementById(`atc-${id}`).style.display='none';
+  document.getElementById(`qc-${id}`).style.display='flex';
+  renderCart();
+}
+
+function chg(id,d) {
+  cart[id]=Math.max(0,(cart[id]||0)+d);
+  saveCart(cart);
+  document.getElementById(`qn-${id}`).textContent=cart[id];
+  if(cart[id]===0){ document.getElementById(`atc-${id}`).style.display=''; document.getElementById(`qc-${id}`).style.display='none'; }
+  renderCart();
+}
+
+function renderCart() {
+  const list=items();
+  const badge=document.getElementById('cartBadge');
+  const total=list.reduce((s,i)=>s+i.q,0);
+  if (badge) { badge.textContent=total; badge.style.display=total?'inline':'none'; }
+
+  if(!list.length){ document.getElementById('cartBody').innerHTML='<p class="cart-empty">Your cart is empty.</p>'; document.getElementById('cartFooter').style.display='none'; return; }
+  document.getElementById('cartFooter').style.display='block';
+  document.getElementById('cartBody').innerHTML=list.map(i=>`
+    <div class="cart-item">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <img src="${i.img}" alt="" class="cart-item-img" onerror="this.style.display='none'" />
+        <div style="min-width:0"><div class="cart-item-name">${i.name}</div><div class="cart-item-meta">₹${i.price} × ${i.q}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px"><span class="cart-item-price">₹${i.price*i.q}</span><button class="cart-remove" onclick="chg('${i.id}',-${i.q})" aria-label="Remove ${i.name} from cart">×</button></div>
+    </div>
+    <div class="cart-item-actions">
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="chg('${i.id}',-1)" aria-label="Decrease quantity of ${i.name}">−</button>
+        <span class="qty-num">${i.q}</span>
+        <button class="qty-btn" onclick="chg('${i.id}',1)" aria-label="Increase quantity of ${i.name}">+</button>
+      </div>
+      <button class="cart-action-link" onclick="saveForLater('${i.id}')">Save for later</button>
+      <button class="cart-action-link" onclick="shareProduct('${i.id}')">Share</button>
+    </div>`).join('');
+  const s=sub(),d=del();
+  document.getElementById('cartSub').textContent=`₹${s}`;
+  document.getElementById('cartDel').textContent=d===0?'FREE':`₹${d}`;
+  document.getElementById('cartGrand').textContent=`₹${s+d}`;
+}
+
+function syncCartUI() {
+  Object.entries(cart).forEach(([id, q]) => {
+    if (q > 0) {
+      const qn = document.getElementById(`qn-${id}`);
+      const atc = document.getElementById(`atc-${id}`);
+      const qc = document.getElementById(`qc-${id}`);
+      if (qn) qn.textContent = q;
+      if (atc) atc.style.display = 'none';
+      if (qc) qc.style.display = 'flex';
+    }
+  });
+}
+
+function saveForLater(id) {
+  // Moves the item out of the active cart and into the wishlist —
+  // same underlying stores (js/cart.js + js/wishlist.js), so this is
+  // just "remove from one, add to the other."
+  delete cart[id];
+  saveCart(cart);
+  addToWishlist(id);
+  const atc = document.getElementById(`atc-${id}`), qc = document.getElementById(`qc-${id}`);
+  if (atc) atc.style.display = '';
+  if (qc) qc.style.display = 'none';
+  renderCart();
+  renderWishlist();
+}
+
+function moveToCart(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  saveCart(cart);
+  removeFromWishlist(id);
+  const qn = document.getElementById(`qn-${id}`), atc = document.getElementById(`atc-${id}`), qc = document.getElementById(`qc-${id}`);
+  if (qn) qn.textContent = cart[id];
+  if (atc) atc.style.display = 'none';
+  if (qc) qc.style.display = 'flex';
+  renderCart();
+  renderWishlist();
+}
+
+function removeWishlistItem(id) {
+  removeFromWishlist(id);
+  renderWishlist();
+}
+
+function renderWishlist() {
+  const list = getWishlist().map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
+  const section = document.getElementById('wishlistSection');
+  const body = document.getElementById('wishlistBody');
+  if (!list.length) { section.style.display = 'none'; body.innerHTML = ''; return; }
+  section.style.display = 'block';
+  body.innerHTML = list.map(p => `
+    <div class="cart-item">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <img src="${p.img}" alt="" class="cart-item-img" onerror="this.style.display='none'" />
+        <div style="min-width:0"><div class="cart-item-name">${p.name}</div><div class="cart-item-meta">₹${p.price}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn-sm" style="padding:7px 16px;font-size:12px" onclick="moveToCart('${p.id}')">Move to Cart</button>
+        <button class="cart-remove" onclick="removeWishlistItem('${p.id}')" aria-label="Remove ${p.name} from wishlist">×</button>
+      </div>
+    </div>`).join('');
+}
+
+/* Native share sheet when the browser/device supports it (mobile
+   Safari/Chrome, some desktop browsers); otherwise falls back to
+   copying a shareable product link to the clipboard. */
+async function shareProduct(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  const url = `${location.origin}${location.pathname}?product=${p.id}`;
+  const shareData = { title: `${p.name} | Brine & Shell`, text: p.desc, url };
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch { /* user cancelled the share sheet — not an error */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    alert('Link copied! Paste it anywhere to share this product.');
+  } catch {
+    prompt('Copy this link to share:', url);
+  }
+}
+
+/* ── CHECKOUT ── */
+function openCheckout() {
+  if(!items().length) return;
+  if (!window.CURRENT_USER) { openSigninPrompt(); return; }
+  // Just a convenience prefill -- freely editable either way. The
+  // server separately tracks the signed-in account's own email
+  // (Account Email) purely to match orders back to "My Orders", so
+  // changing this contact email can never make an order disappear
+  // from your account.
+  if (window.CURRENT_USER) {
+    document.getElementById('cName').value = document.getElementById('cName').value || window.CURRENT_USER.name || '';
+    document.getElementById('cEmail').value = document.getElementById('cEmail').value || window.CURRENT_USER.email || '';
+    // Best-effort prefill of phone from the saved profile (account.html's
+    // "Profile" section). Never overwrites what's already typed.
+    fetch(`${API_BASE}/api/profile`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const phoneEl = document.getElementById('cPhone');
+        if (data?.ok && phoneEl && !phoneEl.value) phoneEl.value = data.profile.phone || '';
+      })
+      .catch(() => {});
+    loadSavedAddressesForCheckout();
+  } else {
+    document.getElementById('savedAddressPicker').style.display = 'none';
+  }
+  const s=sub(),d=del();
+  document.getElementById('orderSummary').innerHTML=`
+    ${items().map(i=>`<div class="order-row"><span style="display:flex;align-items:center;gap:8px;min-width:0"><img src="${i.img}" alt="" class="order-row-img" onerror="this.style.display='none'" />${i.name} ×${i.q}</span><span>₹${i.price*i.q}</span></div>`).join('')}
+    <div class="order-row"><span>Delivery</span><span>${d===0?'FREE':'₹'+d}</span></div>
+    <div class="order-row total"><span>Total</span><span>₹${s+d}</span></div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeCheckout() { document.getElementById('overlay').classList.remove('open'); }
+
+let resumeCheckoutAfterSignin = false;
+function openSigninPrompt() {
+  resumeCheckoutAfterSignin = true;
+  document.getElementById('signinOverlay').classList.add('open');
+  whenGoogleReady(() => renderGoogleButton('shopSigninBtn'));
+}
+function closeSigninPrompt() {
+  resumeCheckoutAfterSignin = false;
+  document.getElementById('signinOverlay').classList.remove('open');
+}
+document.addEventListener('auth:changed', (e) => {
+  if (e.detail.user && resumeCheckoutAfterSignin) {
+    resumeCheckoutAfterSignin = false;
+    closeSigninPrompt();
+    openCheckout();
+  }
+});
+
+let savedAddresses = [];
+
+async function loadSavedAddressesForCheckout() {
+  const picker = document.getElementById('savedAddressPicker');
+  const select = document.getElementById('cSavedAddress');
+  try {
+    const res = await fetch(`${API_BASE}/api/addresses`, { credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok || !data.ok || !data.addresses.length) {
+      picker.style.display = 'none';
+      return;
+    }
+    savedAddresses = data.addresses;
+    select.innerHTML = savedAddresses.map((a, i) =>
+      `<option value="${i}">${a.label}: ${a.address.slice(0, 40)}${a.address.length > 40 ? '…' : ''}</option>`
+    ).join('') + `<option value="new">+ Use a different address</option>`;
+    picker.style.display = 'block';
+    // Prefill from the first saved address, but only into empty fields --
+    // never overwrites something the customer already typed this session.
+    select.value = '0';
+    onSavedAddressChange();
+  } catch {
+    picker.style.display = 'none';
+  }
+}
+
+function onSavedAddressChange() {
+  const select = document.getElementById('cSavedAddress');
+  const phoneEl = document.getElementById('cPhone');
+  const addrEl = document.getElementById('cAddress');
+  if (select.value === 'new') return; // leave fields as-is for free typing
+  const a = savedAddresses[Number(select.value)];
+  if (!a) return;
+  phoneEl.value = a.phone;
+  addrEl.value = a.address;
+}
+
+/* ── RAZORPAY ──
+   The amount is never computed here and trusted — we send the cart
+   (product ids + quantities only) to the backend, which recomputes
+   the total from data/products.json and creates the Razorpay order
+   itself. After payment, we send the signature back to the backend
+   for verification before treating the order as real. */
+async function initiateRazorpay() {
+  const name=document.getElementById('cName').value.trim();
+  const email=document.getElementById('cEmail').value.trim();
+  const phone=document.getElementById('cPhone').value.trim();
+  const address=document.getElementById('cAddress').value.trim();
+  if(!name||!email||!phone||!address){ alert('Please fill in your name, email, phone and delivery address.'); return; }
+  if(phone.length!==10){ alert('Enter a valid 10-digit phone number.'); return; }
+  if(address.length<10){ alert('Please enter a complete delivery address.'); return; }
+
+  const payBtn = document.querySelector('.rzp-btn');
+  payBtn.disabled = true;
+  const originalLabel = payBtn.innerHTML;
+  payBtn.textContent = 'Starting checkout…';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/checkout/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: items().map(i => ({ id: i.id, qty: i.q })),
+        customer: { name, email, phone, address },
+      }),
+    });
+    const data = await res.json();
+    if (res.status === 401) {
+      closeCheckout();
+      openSigninPrompt();
+      throw new Error('Please sign in to place your order.');
+    }
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not start checkout.');
+
+    const rzp = new Razorpay({
+      key: data.keyId,
+      order_id: data.orderId,
+      amount: data.amount,
+      currency: data.currency,
+      name: 'Brine & Shell',
+      description: items().map(i=>`${i.name} ×${i.q}`).join(', '),
+      image: 'assets/images/brineandshell.png',
+      prefill: { name, email, contact:'+91'+phone },
+      theme: { color:'#1C1B3A' },
+      handler: async function(response) {
+        try {
+          const verifyRes = await fetch(`${API_BASE}/api/checkout/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              customerEmail: email,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok || !verifyData.ok) throw new Error('verification failed');
+          closeCheckout();
+          cart={};
+          saveCart(cart);
+          renderProducts();
+          renderCart();
+          const t=document.getElementById('toast');
+          t.style.display='block';
+          setTimeout(()=>t.style.display='none',4500);
+        } catch (verifyErr) {
+          alert('Payment went through but could not be verified. Please contact us with your payment ID: ' + response.razorpay_payment_id);
+        }
+      }
+    });
+    rzp.on('payment.failed', r => alert('Payment failed: ' + r.error.description));
+    rzp.open();
+  } catch (err) {
+    alert(err.message || 'Could not start checkout. Please try again.');
+  } finally {
+    payBtn.disabled = false;
+    payBtn.innerHTML = originalLabel;
+  }
+}
+
+/* ── INIT ── */
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCheckout(); });
+document.getElementById('signinOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSigninPrompt(); });
+document.getElementById('reviewsOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeReviewsModal(); });
+document.addEventListener('DOMContentLoaded', async ()=>{ await window.PRODUCTS_READY; await loadReviewSummaries(); renderProducts(); syncCartUI(); renderCart(); renderWishlist(); });
+</script>
+</body>
+</html>
