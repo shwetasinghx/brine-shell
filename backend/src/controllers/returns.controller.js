@@ -31,8 +31,8 @@ const REASON_MAX_WORDS = 100;
 // Uploads live outside backend/ (which is blocked from the web in
 // server.js) so they're served for free by the same express.static
 // that already serves the rest of the site -- a saved file at
-// <repo root>/uploads/returns/x.jpg is public at /uploads/returns/x.jpg.
-const UPLOAD_DIR = path.join(__dirname, '..', '..', '..', 'uploads', 'returns');
+// backend/uploads/returns/x.jpg is public at /uploads/returns/x.jpg.
+const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'returns');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // Limits/types below reflect what mainstream Indian D2C return flows

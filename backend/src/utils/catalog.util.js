@@ -6,7 +6,7 @@
    browser.
    ========================================= */
 const path = require('path');
-const catalog = require(path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'data', 'products.json'));
+const catalog = require(path.join(__dirname, '..', '..', 'public', 'data', 'products.json'));
 
 function getProduct(id) {
   return catalog.products.find(p => p.id === id);
