@@ -1,6 +1,6 @@
 {
   "config": {
-    "freeDeliveryThreshold": 499,
+    "freeDeliveryThreshold": 3999,
     "deliveryFee": 49,
     "currency": "INR"
   },
