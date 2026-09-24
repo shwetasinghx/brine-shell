@@ -47,11 +47,11 @@
         <h4>Quick Answers</h4>
         <div class="faq-item">
           <button class="faq-q" id="faqBtn1">Do you ship pan-India? <span>▾</span></button>
-          <div class="faq-a" id="faqA1">Yes! We ship to all pin codes across India. Delivery in 3–5 business days.</div>
+          <div class="faq-a" id="faqA1">Yes! We ship to all pin codes across India.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" id="faqBtn2">Can I return a product? <span>▾</span></button>
-          <div class="faq-a" id="faqA2">We have a 7-day return policy for damaged or incorrect products.</div>
+          <div class="faq-a" id="faqA2">Yes, request a return within 48 hours of delivery for damaged or incorrect products.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" id="faqBtn3">Do you do bulk orders? <span>▾</span></button>
@@ -62,21 +62,21 @@
 
     <div class="contact-form">
       <h3>Send us a message</h3>
-      <form id="contactForm" onsubmit="submitForm(event)">
+      <form id="contactForm" onsubmit="submitForm(event)" novalidate>
         <div class="form-row-2">
-          <div class="form-group"><label>First Name *</label><input type="text" name="firstName" placeholder="Riya" required /></div>
-          <div class="form-group"><label>Last Name *</label><input type="text" name="lastName" placeholder="Sharma" required /></div>
+          <div class="form-group"><label>First Name *</label><input type="text" name="firstName" placeholder="Riya" required oninput="clearContactFieldError(this)" /></div>
+          <div class="form-group"><label>Last Name *</label><input type="text" name="lastName" placeholder="Sharma" required oninput="clearContactFieldError(this)" /></div>
         </div>
-        <div class="form-group"><label>Email *</label><input type="email" name="email" placeholder="you@email.com" required /></div>
+        <div class="form-group"><label>Email *</label><input type="email" name="email" placeholder="you@email.com" required oninput="clearContactFieldError(this)" /></div>
         <div class="form-group"><label>Phone</label><input type="tel" name="phone" placeholder="9876543210" maxlength="10" /></div>
         <div class="form-group">
           <label>Subject *</label>
-          <select name="subject" required>
+          <select name="subject" required onchange="clearContactFieldError(this)">
             <option value="">Select a topic</option>
             <option>Order Inquiry</option><option>Return / Refund</option><option>Bulk Order</option><option>Partnership</option><option>Product Feedback</option><option>Other</option>
           </select>
         </div>
-        <div class="form-group"><label>Message *</label><textarea name="message" placeholder="Tell us how we can help..." required></textarea></div>
+        <div class="form-group"><label>Message *</label><textarea name="message" placeholder="Tell us how we can help..." required oninput="clearContactFieldError(this)"></textarea></div>
         <!-- Honeypot: hidden from real visitors, bots tend to fill every field in. -->
         <input type="text" name="company" id="company" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;" aria-hidden="true" />
         <button type="submit" class="form-submit" id="contactSubmitBtn">Send Message</button>
@@ -97,7 +97,29 @@
 </script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/partials.js"></script>
+<script src="assets/js/notifications.js"></script>
 <script>
+const CONTACT_REQUIRED_FIELDS = ['firstName', 'lastName', 'email', 'subject', 'message'];
+const CONTACT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function clearContactFieldError(el) {
+  el.classList.remove('input-error');
+  const form = el.form;
+  const anyLeft = CONTACT_REQUIRED_FIELDS.some(name => form.elements[name].classList.contains('input-error'));
+  if (!anyLeft) document.getElementById('formError').style.display = 'none';
+}
+
+function showContactError(form, message, invalidNames) {
+  invalidNames = invalidNames || [];
+  const err = document.getElementById('formError');
+  err.textContent = message;
+  err.style.display = 'block';
+  invalidNames.forEach(name => form.elements[name].classList.add('input-error'));
+  const target = invalidNames.length ? form.elements[invalidNames[0]] : err;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (invalidNames.length) target.focus();
+}
+
 async function submitForm(e) {
   e.preventDefault();
   const form = e.target;
@@ -106,9 +128,20 @@ async function submitForm(e) {
   const btn = document.getElementById('contactSubmitBtn');
   s.style.display = 'none';
   err.style.display = 'none';
+  CONTACT_REQUIRED_FIELDS.forEach(name => form.elements[name].classList.remove('input-error'));
 
   const fd = new FormData(form);
   const payload = Object.fromEntries(fd.entries());
+
+  const missing = CONTACT_REQUIRED_FIELDS.filter(name => !String(payload[name] || '').trim());
+  if (missing.length) {
+    showContactError(form, 'Please fill in the highlighted field' + (missing.length > 1 ? 's' : '') + ' to continue.', missing);
+    return;
+  }
+  if (!CONTACT_EMAIL_RE.test(String(payload.email).trim())) {
+    showContactError(form, "That email address doesn't look right.", ['email']);
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Sending…';
@@ -122,10 +155,12 @@ async function submitForm(e) {
     if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong.');
     s.style.display = 'block';
     form.reset();
+    s.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => s.style.display = 'none', 6000);
   } catch (e2) {
     err.textContent = e2.message || 'Could not send your message. Please try again or email us directly.';
     err.style.display = 'block';
+    err.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } finally {
     btn.disabled = false;
     btn.textContent = 'Send Message';

@@ -1,7 +1,7 @@
 const express = require('express');
 const { getRows, appendRow } = require('../services/sheets.service');
 const { requireAuth } = require('../utils/auth.util');
-const { sendEmail } = require('../services/resend.service');
+const { sendEmail } = require('../services/mailer.service');
 const { getProduct } = require('../utils/catalog.util');
 const { REVIEWS_COL, REVIEW_STATUSES, DELIVERY_SPEEDS, REVIEW_TEXT_MAX_WORDS } = require('../utils/reviews-schema.util');
 const { RETURNS_COL } = require('../utils/returns-schema.util');

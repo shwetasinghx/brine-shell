@@ -1,6 +1,6 @@
 const express = require('express');
 const { appendRow } = require('../services/sheets.service');
-const { sendEmail } = require('../services/resend.service');
+const { sendEmail } = require('../services/mailer.service');
 
 const router = express.Router();
 

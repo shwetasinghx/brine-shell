@@ -15,6 +15,7 @@ const profileRoute = require('./routes/profile.routes');
 const addressesRoute = require('./routes/addresses.routes');
 const reviewsRoute = require('./routes/reviews.routes');
 const adminRoute = require('./routes/admin.routes');
+const couponsRoute = require('./routes/coupons.routes');
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.get('/api/me', authRoute.meHandler);
 app.use('/api/contact', formLimiter, contactRoute);
 app.use('/api/newsletter', formLimiter, newsletterRoute);
 app.use('/api/checkout', checkoutRoute);
+app.use('/api/coupons', formLimiter, couponsRoute);
 app.use('/api/auth', authLimiter, authRoute);
 app.use('/api/orders', formLimiter, ordersRoute);
 app.use('/api/returns', formLimiter, returnsRoute);
@@ -63,7 +65,6 @@ app.use('/api/admin', adminRoute);
 app.use(errorHandler);
 
 const frontendPath = path.join(__dirname, '..', frontendDirectory);
-const uploadsPath = path.join(__dirname, '..', 'uploads');
 
 // Keep page files fresh after deployment while allowing images/uploads to cache normally.
 app.use(express.static(frontendPath, {
@@ -74,6 +75,12 @@ app.use(express.static(frontendPath, {
     }
   },
 }));
-app.use('/uploads', express.static(uploadsPath, { dotfiles: 'ignore' }));
+// The old public, unauthenticated /uploads static mount is gone --
+// return-request photos/videos are encrypted at rest and now only
+// served through the requireAdmin-gated GET /api/admin/returns/media/:filename
+// route (see admin.controller.js). Nothing else was ever served from
+// this directory (product images live under public/assets/ via the
+// static mount above), so removing this line closes that route off
+// entirely rather than replacing it with a narrower version.
 
 module.exports = app;

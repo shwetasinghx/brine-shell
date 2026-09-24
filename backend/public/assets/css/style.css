@@ -114,6 +114,14 @@ img { max-width: 100%; display: block; }
 .product-card { background: var(--white); border-radius: var(--radius); overflow: hidden; transition: transform .25s, box-shadow .25s; box-shadow: 0 2px 14px rgba(28,27,58,.07); }
 .product-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
 
+/* Briefly outlined when landed on via a #product-<id> link from
+   elsewhere on the site (see shop.html's jumpToProductFromHash),
+   so it's clear which card was jumped to in a long grid. Faded out
+   by removing the class again a couple seconds later, not by a CSS
+   animation, so it survives being interrupted (e.g. the visitor
+   scrolls away) without leaving an abrupt visual snap. */
+.product-card.jump-highlight { box-shadow: 0 0 0 3px var(--gold), var(--shadow-lg); transition: box-shadow .4s; }
+
 .pc-img { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--cream-dk); }
 .pc-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
 .product-card:hover .pc-img img { transform: scale(1.06); }
@@ -174,13 +182,69 @@ img { max-width: 100%; display: block; }
 .footer-logo span { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; }
 .footer-logo .amp { color: var(--gold); }
 .footer-brand p { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.8; }
+.footer-social { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.footer-social-label { font-size: 13px; color: rgba(255,255,255,.6); }
+.footer-social-icon { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--gold); display: flex; align-items: center; justify-content: center; color: var(--gold); flex-shrink: 0; transition: background .2s, color .2s, transform .2s; }
+.footer-social-icon svg { width: 18px; height: 18px; }
+.footer-social-icon:hover { background: var(--gold); color: var(--navy); transform: translateY(-2px); }
 .footer-links h4 { font-family: 'Playfair Display', serif; font-size: 16px; margin-bottom: 16px; color: var(--gold); }
 .footer-links a, .footer-links p { display: block; font-size: 14px; color: rgba(255,255,255,.6); margin-bottom: 10px; transition: color .2s; }
 .footer-links a:hover { color: var(--gold); }
 .footer-bottom { border-top: 1px solid rgba(255,255,255,.1); padding: 20px 5%; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,.45); flex-wrap: wrap; gap: 12px; }
-.footer-pay { display: flex; align-items: center; gap: 6px; }
+.footer-pay { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; row-gap: 6px; column-gap: 10px; }
 .footer-pay strong { color: var(--gold); }
+.footer-pay-label { white-space: nowrap; }
+.footer-pay-methods { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; row-gap: 6px; column-gap: 10px; }
+.footer-pay-methods span { white-space: nowrap; }
+.footer-pay-methods span:not(:last-child)::after { content: '\00b7'; margin-left: 10px; color: rgba(255,255,255,.3); }
 .footer-bottom a:hover { color: var(--gold); }
+
+/* Small "who built this site" corner badge, for a visitor who might
+   want their own business site built -- deliberately subtle (muted
+   until hovered) so it reads as a discreet credit line, not
+   competing with the storefront's own branding above it. Sits as a
+   third item in the existing .footer-bottom flex row, which already
+   centers/wraps its children responsively, so no separate mobile
+   layout was needed here. */
+.dev-credit { position: relative; }
+.dev-credit-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: 1px solid rgba(255,255,255,.25); border-radius: 50px;
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,.6); cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: border-color .2s, color .2s;
+}
+.dev-credit-trigger svg { width: 13px; height: 13px; flex-shrink: 0; }
+.dev-credit-trigger:hover, .dev-credit-trigger:focus-visible { border-color: var(--gold); color: var(--gold); }
+/* Same light floating card as before -- just centered on the
+   viewport (position: fixed + flex-centering) instead of anchored to
+   the trigger button, which sits at the page's right edge and so
+   never actually centered the card. No dark backdrop here on
+   purpose: this is a small info popover, not a confirm/edit modal,
+   and dimming the whole page behind it was more than was asked for. */
+.dev-credit-overlay { display: none; position: fixed; inset: 0; z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+.dev-credit-overlay.open { display: flex; }
+.dev-credit-card {
+  position: relative;
+  background: var(--white); border-radius: 12px; box-shadow: var(--shadow-lg);
+  width: 290px; max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px); overflow-y: auto;
+  padding: 26px 20px 20px; text-align: left;
+  box-sizing: border-box;
+}
+.dev-credit-close { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%; background: var(--cream); border: none; font-size: 14px; cursor: pointer; color: var(--navy); }
+.dev-credit-close:hover { background: var(--cream-dk); }
+.dev-credit-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+.dev-credit-title { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+.dev-credit-tagline, .dev-credit-cta { font-size: 13px; line-height: 1.6; color: var(--text); margin-bottom: 10px; }
+.dev-credit-email-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--cream-dk); border-bottom: 1px solid var(--cream-dk); }
+.dev-credit-email { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--navy); word-break: break-all; flex: 1; min-width: 0; }
+.dev-credit-email svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--gold); }
+.dev-credit-email:hover { color: var(--gold); }
+.dev-credit-copy { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--cream); color: var(--navy); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s, color .2s; }
+.dev-credit-copy svg { width: 14px; height: 14px; }
+.dev-credit-copy:hover { background: var(--gold); color: var(--white); }
+.dev-credit-signoff { font-size: 12px; font-style: italic; color: var(--muted); margin: 12px 0 0; text-align: center; }
 
 /* ============ PAGE HERO ============ */
 .page-hero { padding: 140px 5% 64px; background: linear-gradient(140deg, var(--cream) 0%, #f3ddb8 100%); text-align: center; }
@@ -212,6 +276,23 @@ img { max-width: 100%; display: block; }
 .cart-checkout-btn:hover { background: var(--gold); color: var(--navy); }
 .pay-note { margin-top: 12px; text-align: center; font-size: 12px; color: var(--muted); }
 
+/* ── PROMO CODE (shop.html cart sidebar) ── */
+.promo-box { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--cream-dk); }
+.promo-row { display: flex; flex-direction: column; gap: 8px; }
+.promo-row select { width: 100%; padding: 10px 12px; border: 1px solid var(--cream-dk); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--navy); background: var(--white); cursor: pointer; }
+.promo-row select:focus { outline: none; border-color: var(--gold); }
+.promo-manual-row { display: flex; gap: 8px; }
+.promo-manual-row input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--cream-dk); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--navy); background: var(--white); }
+.promo-manual-row input:focus { outline: none; border-color: var(--gold); }
+.promo-apply-btn { flex-shrink: 0; padding: 10px 18px; background: var(--navy); color: var(--white); border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: background .2s; }
+.promo-apply-btn:hover { background: var(--gold); color: var(--navy); }
+.promo-apply-btn:disabled { opacity: .6; cursor: default; }
+.promo-applied { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: #eef7ee; border: 1px solid #bfe3bf; border-radius: 8px; font-size: 13px; color: var(--navy); }
+.promo-remove-btn { flex-shrink: 0; background: none; border: none; color: #842029; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; font-family: 'Inter', sans-serif; padding: 0; }
+.promo-error { margin: 8px 0 0; font-size: 12px; color: #842029; }
+.cart-total-row.discount { color: #2e7d32; font-weight: 600; }
+
+
 /* ============ CHECKOUT MODAL ============ */
 .overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.6); align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
 .overlay.open { display: flex; }
@@ -223,10 +304,12 @@ img { max-width: 100%; display: block; }
 .order-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--navy); padding: 4px 0; }
 .order-row-img { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; background: var(--cream); flex-shrink: 0; }
 .order-row.total { font-weight: 700; font-size: 16px; border-top: 1px solid var(--cream-dk); margin-top: 10px; padding-top: 12px; }
+a.order-row-link { text-decoration: none; color: inherit; border-radius: 8px; transition: background .15s; }
+a.order-row-link:hover { background: var(--cream-dk); }
+a.order-row-link:hover .order-row-img { transform: scale(1.08); }
+.order-row-img { transition: transform .15s; }
 .rzp-btn { width: 100%; padding: 16px; font-size: 16px; font-weight: 700; background: var(--navy); color: var(--white); border: none; border-radius: 50px; cursor: pointer; font-family: 'Inter', sans-serif; transition: background .2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .rzp-btn:hover { background: var(--gold); color: var(--navy); }
-.pay-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-.pay-chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid #ddd; color: var(--muted); }
 
 /* ============ FORM ============ */
 .form-group { margin-bottom: 18px; }
@@ -235,6 +318,28 @@ img { max-width: 100%; display: block; }
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--gold); }
 .form-group textarea { resize: vertical; min-height: 120px; }
 .form-group textarea.address-textarea { min-height: 48px; }
+
+/* Inline form validation/error state -- shared by the checkout modal
+   and the contact form, replacing native alert()/browser-validation
+   popups with the same on-brand feedback in both places. */
+.form-group input.input-error,
+.form-group textarea.input-error,
+.form-group select.input-error { border-color: #c0392b; background: #fdf2f2; }
+#checkoutError.form-error { display: none; margin: 0 0 14px; }
+#checkoutError.form-error.visible { display: block; }
+
+/* Payment succeeded but server-side verification failed -- rare, but
+   the customer needs to retain the payment ID, so this gets a
+   distinct, persistent, non-alarming (amber, not red) treatment with
+   a one-tap copy affordance rather than a dismiss-and-forget alert. */
+.checkout-warning { display: none; background: #fdecd2; border: 1px solid #f0c375; border-radius: 10px; padding: 16px 18px; margin: 0 0 14px; color: #6b4400; font-size: 14px; line-height: 1.6; }
+.checkout-warning.visible { display: block; }
+.checkout-warning strong { color: #4d3200; }
+.checkout-warning .payment-id-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.checkout-warning .payment-id-chip { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; background: rgba(0,0,0,.07); padding: 5px 10px; border-radius: 6px; word-break: break-all; }
+.checkout-warning .copy-id-btn { flex-shrink: 0; padding: 6px 16px; background: #6b4400; color: #fff; border: none; border-radius: 50px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity .2s; }
+.checkout-warning .copy-id-btn:hover { opacity: .82; }
+
 
 /* Live in-browser unboxing-video recorder (orders.html) -- same box
    look as a regular form field so it doesn't feel like a bolted-on
@@ -316,8 +421,14 @@ img { max-width: 100%; display: block; }
 .faq-a { display: none; font-size: 13px; color: var(--muted); margin-top: 8px; }
 .faq-item.open .faq-a { display: block; }
 
-/* ============ TOAST ============ */
-#toast { display:none; position:fixed; bottom:30px; right:30px; z-index:3000; background:#27ae60; color:#fff; padding:16px 24px; border-radius:12px; font-size:15px; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.2); }
+/* ============ TOAST ============
+   Green is the "something you did succeeded" tone (order placed).
+   .toast-info is the neutral counterpart for things that just
+   happened to your cart in the background (e.g. an item you'd added
+   became unavailable) -- same shape, navy instead of green so it
+   doesn't read as a celebratory success message. */
+#toast { display:none; position:fixed; bottom:30px; right:30px; z-index:3000; background:#27ae60; color:#fff; padding:16px 24px; border-radius:12px; font-size:15px; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.2); max-width:min(360px,calc(100vw - 60px)); }
+#toast.toast-info { background: var(--navy); }
 
 /* ============ AUTH ============ */
 .nav-auth { display: flex; align-items: center; }
@@ -368,6 +479,75 @@ img { max-width: 100%; display: block; }
 .mobile-auth .auth-menu { flex-basis: 100%; width: 100%; position: static; display: block; box-shadow: none; padding: 8px 0 0; margin-top: 8px; background: none; }
 .mobile-auth .auth-menu-email { padding-left: 0; }
 .mobile-auth .auth-menu a, .mobile-auth .auth-menu button { padding-left: 0; }
+
+
+/* ============ NOTIFICATIONS ============
+   Persistent history of background/system notices (e.g. a cart
+   item that became unavailable), opened from a bell icon in the
+   header. Mirrors .auth-chip/.auth-menu's shape and shadow so it
+   reads as the same family of header dropdown, but uses the
+   click-toggle interaction (like .signin-trigger, not the
+   signed-in hover chip) since it also holds an interactive
+   "Clear all" button. */
+.nav-notif { display: flex; align-items: center; }
+/* inline-flex (not flex) so this stays a small, content-sized
+   round button wherever it's placed -- .nav-notif (desktop) is
+   itself a flex item, which happened to keep a block-level flex
+   box shrink-to-fit there, but .mobile-notif is a plain block
+   container, so the same box would otherwise stretch to the full
+   menu width and turn the 50% border-radius into a giant stretched
+   oval instead of a circle -- the same class of bug Pass 5 hit with
+   .auth-chip, just recurring here for the bell. */
+.notif-chip { position: relative; display: inline-flex; align-items: center; cursor: pointer; padding: 8px; border-radius: 50%; }
+.notif-chip:hover, .notif-chip:focus-within { background: rgba(28,27,58,.06); }
+.notif-bell-icon { display: inline-flex; align-items: center; color: var(--navy); }
+.notif-count {
+  position: absolute; top: 2px; right: 2px;
+  background: var(--gold); color: var(--navy);
+  font-size: 10px; font-weight: 800; line-height: 1;
+  min-width: 16px; height: 16px; padding: 0 3px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 2px var(--cream);
+}
+.notif-count-hidden { display: none; }
+
+.notif-panel {
+  display: none;
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 1001;
+  background: var(--white); border-radius: 12px; box-shadow: var(--shadow-lg);
+  width: 320px; max-width: calc(100vw - 40px);
+  overflow: hidden;
+}
+.notif-chip.menu-open .notif-panel { display: block; }
+.notif-panel-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--cream-dk); font-size: 13px; font-weight: 700; color: var(--navy); }
+.notif-clear-btn { background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+.notif-clear-btn:hover { color: var(--navy); }
+.notif-list { max-height: 320px; overflow-y: auto; }
+.notif-empty { padding: 26px 16px; text-align: center; font-size: 13px; color: var(--muted); }
+.notif-item { display: flex; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--cream-dk); text-align: left; }
+.notif-item:last-child { border-bottom: none; }
+.notif-dot { flex-shrink: 0; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--cream-dk); }
+.notif-item.notif-unread .notif-dot { background: var(--gold); }
+.notif-item-body p { font-size: 13px; color: var(--text); line-height: 1.5; }
+.notif-time { font-size: 11px; color: var(--muted); }
+
+.mobile-notif { padding: 12px 0; border-top: 1px solid var(--cream-dk); margin-top: 4px; }
+/* The desktop .notif-panel floats as an absolutely-positioned,
+   right-anchored dropdown -- fine there since .nav-notif sits near
+   the right edge of the navbar, so a right:0 panel always opens
+   safely inside the viewport. In the mobile menu the bell sits near
+   the LEFT edge instead, so that same right:0 floating panel would
+   try to open off toward the left and could spill past the screen
+   edge on a narrow phone. Same fix as .mobile-auth .auth-menu below:
+   make it flow inline in normal document flow instead of floating. */
+.mobile-notif .notif-panel {
+  position: static;
+  width: 100%;
+  max-width: none;
+  box-shadow: none;
+  margin-top: 10px;
+  border: 1px solid var(--cream-dk);
+}
 
 /* ============ ACCOUNT / ORDERS ============ */
 .account-layout { max-width: 800px; margin: 0 auto; padding: 60px 5% 100px; }
@@ -424,7 +604,7 @@ img { max-width: 100%; display: block; }
 
 /* Navbar: collapse before the tablet squeeze zone, not at 768px. */
 @media (max-width: 920px) {
-  .nav-links, .nav-cta, .nav-auth { display: none; }
+  .nav-links, .nav-cta, .nav-notif, .nav-auth { display: none; }
   .nav-toggle { display: block; }
 }
 

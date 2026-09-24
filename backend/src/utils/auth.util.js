@@ -60,17 +60,25 @@ function requireAuth(req, res, next) {
    single shared password (ADMIN_PASSWORD in .env) is enough here
    since there's one business owner, not a multi-user admin team.
    ========================================= */
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 const ADMIN_COOKIE_NAME = 'bs_admin';
 const ADMIN_SESSION_HOURS = 12;
 
-function checkAdminPassword(candidate) {
-  const real = process.env.ADMIN_PASSWORD || '';
-  const a = Buffer.from(String(candidate || ''));
-  const b = Buffer.from(real);
-  if (a.length !== b.length) return false; // timingSafeEqual requires equal length
-  return real.length > 0 && crypto.timingSafeEqual(a, b);
+// The admin password is never stored in plain text -- only its
+// bcrypt hash lives in .env (ADMIN_PASSWORD_HASH), the same way a
+// real user-account password would be stored. bcrypt.compare() is
+// already constant-time with respect to the candidate password (it
+// re-hashes and compares the digest), which is what the old
+// crypto.timingSafeEqual() call here was protecting against for a
+// plain-text comparison -- that protection is now bcrypt's job
+// instead. To change the admin password: generate a new hash with
+// `node -e "console.log(require('bcryptjs').hashSync('new-password', 12))"`
+// and replace ADMIN_PASSWORD_HASH in .env.
+async function checkAdminPassword(candidate) {
+  const hash = process.env.ADMIN_PASSWORD_HASH || '';
+  if (!hash) return false;
+  return bcrypt.compare(String(candidate || ''), hash);
 }
 
 function signAdminSession() {

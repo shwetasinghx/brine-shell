@@ -3,3 +3,7 @@ Thumbs.db
 node_modules/
 *.log
 uploads/
+
+# Scratch/one-off files Claude generates while working in this repo
+# (e.g. preview files delivered into chat) -- not part of the site.
+Claude outputs/

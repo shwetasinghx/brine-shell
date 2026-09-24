@@ -138,6 +138,7 @@
 </script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/partials.js"></script>
+<script src="assets/js/notifications.js"></script>
 <script src="assets/js/cart.js"></script>
 <script>
 async function handleNL(e) {
@@ -155,7 +156,21 @@ async function handleNL(e) {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong.');
-    msg.textContent = 'Thanks! Your 10% code is on its way.';
+    // Shown directly on the page rather than only "check your email"
+    // -- so the code is guaranteed visible immediately whether or not
+    // the welcome email lands promptly. Wording differs for a repeat
+    // signup so it doesn't say "Thanks for subscribing!" to someone
+    // who already is (data.alreadySubscribed comes from the server's
+    // dedupe check, which also means no second welcome email fired).
+    if (data.coupon && data.alreadySubscribed) {
+      msg.innerHTML = `You're already on the list! Your code is still <strong>${data.coupon.code}</strong> for ${data.coupon.description}. Apply it in your cart before checkout.`;
+    } else if (data.coupon) {
+      msg.innerHTML = `Thanks! Use code <strong>${data.coupon.code}</strong> for ${data.coupon.description}. Apply it in your cart before checkout.`;
+    } else if (data.alreadySubscribed) {
+      msg.textContent = "You're already subscribed!";
+    } else {
+      msg.textContent = 'Thanks for subscribing!';
+    }
     form.reset();
   } catch (err) {
     msg.textContent = err.message || 'Could not subscribe right now. Please try again.';

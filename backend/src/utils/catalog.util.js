@@ -4,12 +4,19 @@
    change only ever happens in one file. This is what makes it safe to
    trust an order total computed here instead of one sent by the
    browser.
+
+   Delegates the actual file access to products.util.js, which reads
+   the file fresh on every call instead of require()-ing it -- a
+   plain require() caches the parsed JSON in memory forever, so an
+   admin adding/editing a product (which writes this same file) would
+   otherwise not be reflected here until the server restarted, and
+   checkout would keep rejecting the new product as "Unknown product
+   id" in the meantime. See products.util.js's own comment.
    ========================================= */
-const path = require('path');
-const catalog = require(path.join(__dirname, '..', '..', 'public', 'data', 'products.json'));
+const { listProducts, getConfig } = require('./products.util');
 
 function getProduct(id) {
-  return catalog.products.find(p => p.id === id);
+  return listProducts().find(p => p.id === id);
 }
 
 /* items: [{ id, qty }] as sent by the browser (no prices trusted).
@@ -20,6 +27,7 @@ function priceCart(items) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('Cart is empty');
   }
+  const config = getConfig();
   const lineItems = items.map(({ id, qty }) => {
     const product = getProduct(id);
     if (!product) throw new Error(`Unknown product id: ${id}`);
@@ -30,8 +38,8 @@ function priceCart(items) {
     return { id, name: product.name, price: product.price, qty: quantity, lineTotal: product.price * quantity };
   });
   const subtotal = lineItems.reduce((sum, i) => sum + i.lineTotal, 0);
-  const deliveryFee = subtotal >= catalog.config.freeDeliveryThreshold ? 0 : catalog.config.deliveryFee;
-  return { lineItems, subtotal, deliveryFee, total: subtotal + deliveryFee, currency: catalog.config.currency };
+  const deliveryFee = subtotal >= config.freeDeliveryThreshold ? 0 : config.deliveryFee;
+  return { lineItems, subtotal, deliveryFee, total: subtotal + deliveryFee, currency: config.currency };
 }
 
-module.exports = { getProduct, priceCart, config: catalog.config };
+module.exports = { getProduct, priceCart, get config() { return getConfig(); } };

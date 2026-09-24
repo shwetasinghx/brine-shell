@@ -8,6 +8,31 @@
    ========================================= */
 const { google } = require('googleapis');
 
+// Neither the OAuth token exchange (implicit in the very first call
+// made by a fresh JWT client, which getAuth() builds one of per call
+// below) nor the Sheets API call itself carries any timeout of its
+// own. If either stalls -- a network hiccup, Google having a slow
+// moment -- the request just hangs forever with no error and no
+// response, which from the browser looks exactly like a page stuck
+// on "Loading...". Every Sheets call below is wrapped in this so a
+// stall becomes a clear, catchable error within a fixed ceiling
+// instead of an indefinite hang; every controller that calls into
+// this file already has a try/catch that turns a rejected promise
+// into a proper error response, so this alone is enough to fix it
+// everywhere this service is used.
+const SHEETS_TIMEOUT_MS = 15000;
+function withTimeout(promise, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      const t = setTimeout(() => reject(new Error(`Google Sheets request timed out after ${SHEETS_TIMEOUT_MS / 1000}s (${label})`)), SHEETS_TIMEOUT_MS);
+      // Never let this timer alone keep the process alive/hold up a
+      // clean exit -- it's just a ceiling on the real request above.
+      if (t.unref) t.unref();
+    }),
+  ]);
+}
+
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
@@ -24,13 +49,13 @@ async function appendRow(tabName, row) {
   }
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
-  await sheets.spreadsheets.values.append({
+  await withTimeout(sheets.spreadsheets.values.append({
     spreadsheetId: sheetId,
     range: `${tabName}!A:Z`,
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] },
-  });
+  }), `appendRow:${tabName}`);
 }
 
 /* Finds the first row in a tab whose column A matches `key` and
@@ -41,10 +66,10 @@ async function updateRowByKey(tabName, key, updates) {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
-  const { data } = await sheets.spreadsheets.values.get({
+  const { data } = await withTimeout(sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
     range: `${tabName}!A:A`,
-  });
+  }), `updateRowByKey:get:${tabName}`);
   const rows = data.values || [];
   const rowIndex = rows.findIndex(r => r[0] === key);
   if (rowIndex === -1) return false;
@@ -53,10 +78,10 @@ async function updateRowByKey(tabName, key, updates) {
     range: `${tabName}!${col}${rowIndex + 1}`,
     values: [[value]],
   }));
-  await sheets.spreadsheets.values.batchUpdate({
+  await withTimeout(sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: sheetId,
     requestBody: { valueInputOption: 'USER_ENTERED', data: requests },
-  });
+  }), `updateRowByKey:batchUpdate:${tabName}`);
   return true;
 }
 
@@ -68,10 +93,10 @@ async function getRows(tabName) {
   const sheetId = process.env.GOOGLE_SHEET_ID;
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
-  const { data } = await sheets.spreadsheets.values.get({
+  const { data } = await withTimeout(sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
     range: `${tabName}!A:Z`,
-  });
+  }), `getRows:${tabName}`);
   return data.values || [];
 }
 
@@ -84,29 +109,29 @@ async function upsertRow(tabName, key, row) {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
-  const { data } = await sheets.spreadsheets.values.get({
+  const { data } = await withTimeout(sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
     range: `${tabName}!A:A`,
-  });
+  }), `upsertRow:get:${tabName}`);
   const rows = data.values || [];
   const rowIndex = rows.findIndex(r => r[0] === key);
 
   if (rowIndex === -1) {
-    await sheets.spreadsheets.values.append({
+    await withTimeout(sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
       range: `${tabName}!A:Z`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [row] },
-    });
+    }), `upsertRow:append:${tabName}`);
   } else {
     const endCol = String.fromCharCode(64 + row.length); // row.length=5 -> 'E'
-    await sheets.spreadsheets.values.update({
+    await withTimeout(sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
       range: `${tabName}!A${rowIndex + 1}:${endCol}${rowIndex + 1}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [row] },
-    });
+    }), `upsertRow:update:${tabName}`);
   }
 }
 
@@ -122,10 +147,10 @@ async function updateRowByColumn(tabName, columnIndex, key, updates) {
   const sheets = google.sheets({ version: 'v4', auth });
   const colLetter = String.fromCharCode(65 + columnIndex);
 
-  const { data } = await sheets.spreadsheets.values.get({
+  const { data } = await withTimeout(sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
     range: `${tabName}!${colLetter}:${colLetter}`,
-  });
+  }), `updateRowByColumn:get:${tabName}`);
   const rows = data.values || [];
   const rowIndex = rows.findIndex(r => r[0] === key);
   if (rowIndex === -1) return false;
@@ -134,10 +159,10 @@ async function updateRowByColumn(tabName, columnIndex, key, updates) {
     range: `${tabName}!${col}${rowIndex + 1}`,
     values: [[value]],
   }));
-  await sheets.spreadsheets.values.batchUpdate({
+  await withTimeout(sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: sheetId,
     requestBody: { valueInputOption: 'USER_ENTERED', data: requests },
-  });
+  }), `updateRowByColumn:batchUpdate:${tabName}`);
   return true;
 }
 

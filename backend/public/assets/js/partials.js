@@ -37,11 +37,13 @@ function buildHeader(page) {
   </a>
   <ul class="nav-links">${navLinks}</ul>
   ${cta}
+  <div class="nav-notif" id="navNotif"></div>
   <div class="nav-auth" id="navAuth"></div>
   <button class="nav-toggle" id="navToggle" onclick="toggleMenu()" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileMenu">&#9776;</button>
 </nav>
 <div class="mobile-menu" id="mobileMenu">
   ${mobileLinks}
+  <div class="mobile-notif" id="mobileNotif"></div>
   <div class="mobile-auth" id="mobileAuth"></div>
 </div>`;
 }
@@ -60,6 +62,16 @@ function buildFooter() {
         <span>Brine <span class="amp">&amp;</span> Shell</span>
       </div>
       <p>Like Butter, But Better.<br />Made with love and real peanuts.</p>
+      <div class="footer-social">
+        <span class="footer-social-label">Follow us</span>
+        <a href="https://www.instagram.com/buildingbrineandshell?utm_source=qr&stkn=aXE2aTJjNW9mNHMz" target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="Follow Brine & Shell on Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="5" />
+            <circle cx="12" cy="12" r="4.2" />
+            <circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none" />
+          </svg>
+        </a>
+      </div>
     </div>
     <div class="footer-links">
       <h4>Quick Links</h4>
@@ -77,9 +89,119 @@ function buildFooter() {
   </div>
   <div class="footer-bottom">
     <p>© ${year} Brine &amp; Shell. All rights reserved. &nbsp;·&nbsp; <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="refund-policy.html">Refund Policy</a></p>
-    <div class="footer-pay"><span>Secured by</span><strong>Razorpay</strong><span>| UPI · Cards · PhonePe · Google Pay</span></div>
+    <div class="footer-pay">
+      <span class="footer-pay-label">Secured by <strong>Razorpay</strong></span>
+      <span class="footer-pay-methods"><span>UPI</span><span>Cards</span><span>PhonePe</span><span>Google Pay</span></span>
+    </div>
+    <div class="dev-credit" id="devCredit">
+      <button type="button" class="dev-credit-trigger" onclick="toggleDevCredit(event)"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDevCredit(event);}"
+              aria-label="Website design and development enquiry">
+        <span>Site design &amp; development</span>
+      </button>
+    </div>
   </div>
-</footer>`;
+</footer>
+<div class="dev-credit-overlay" id="devCreditOverlay" onclick="if(event.target===this) closeDevCredit()">
+  <div class="dev-credit-card">
+    <button type="button" class="dev-credit-close" onclick="closeDevCredit()" aria-label="Close">&#10005;</button>
+    <p class="dev-credit-name">Shweta Singh</p>
+    <p class="dev-credit-title">Software Development Engineer</p>
+    <p class="dev-credit-tagline">Building technology, solving problems, and turning ideas into real-world experiences.</p>
+    <p class="dev-credit-cta">Let's bring your ideas to life, one step closer to the dream.</p>
+    <div class="dev-credit-email-row">
+      <a href="mailto:shwetasingh0199@gmail.com" class="dev-credit-email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" /><path d="m3 6 9 6.5L21 6" />
+        </svg>
+        <span>shwetasingh0199@gmail.com</span>
+      </a>
+      <button type="button" class="dev-credit-copy" onclick="copyDevEmail(this)" aria-label="Copy email address">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      </button>
+    </div>
+    <p class="dev-credit-signoff">Designed &amp; built with passion.</p>
+  </div>
+</div>`;
+}
+
+/* Opens/closes the developer-credit card as a centered overlay
+   (same fixed-inset-backdrop pattern admin.html's confirm/product
+   modals already use), rather than a corner-anchored dropdown --
+   the trigger button lives at the far right edge of the footer, so
+   anchoring the card TO the button (the earlier approach) still
+   landed it near the page's right edge instead of actually centered.
+   Centering on the viewport itself sidesteps that regardless of
+   where the trigger sits. */
+let devCreditTriggerEl = null;
+
+/* Positions the card centered directly above whichever element
+   triggered it (the footer button on desktop and mobile alike --
+   this same footer markup is shared by every page, so there's only
+   ever one trigger), computed from that element's real on-screen
+   position rather than a fixed CSS offset, then clamped so the card
+   can never spill past a screen edge the way the earlier
+   right:0-anchored version did on narrow phones. The card is made
+   visible BEFORE its width is measured (not after) specifically so
+   `offsetWidth` reflects the width it will actually render at on
+   that device -- .dev-credit-card's own `max-width: calc(100vw -
+   40px)` shrinks it on narrow phones, and measuring while still
+   display:none would always read 0 and silently fall back to the
+   wrong (desktop) width. */
+function positionDevCreditCard(triggerEl) {
+  const overlay = document.getElementById('devCreditOverlay');
+  const card = overlay?.querySelector('.dev-credit-card');
+  if (!overlay || !card || !triggerEl) return;
+  const rect = triggerEl.getBoundingClientRect();
+  const cardWidth = card.offsetWidth || 290;
+  const margin = 16;
+  let left = rect.left + rect.width / 2 - cardWidth / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - cardWidth - margin));
+  card.style.position = 'fixed';
+  card.style.left = `${left}px`;
+  card.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+  card.style.top = 'auto';
+}
+
+function toggleDevCredit(e) {
+  e.stopPropagation();
+  devCreditTriggerEl = e.currentTarget;
+  document.getElementById('devCreditOverlay')?.classList.add('open');
+  positionDevCreditCard(devCreditTriggerEl);
+}
+function closeDevCredit() {
+  document.getElementById('devCreditOverlay')?.classList.remove('open');
+}
+// Re-centers on the trigger if the viewport changes size/orientation
+// while the card is open (e.g. rotating a phone) -- otherwise it
+// would stay pinned to coordinates computed for the old layout.
+window.addEventListener('resize', () => {
+  if (document.getElementById('devCreditOverlay')?.classList.contains('open')) {
+    positionDevCreditCard(devCreditTriggerEl);
+  }
+});
+
+/* The mailto: link above already opens the visitor's default mail
+   app directly -- this button is just a fallback for anyone without
+   one configured (increasingly common), mirroring shop.html's own
+   clipboard-copy pattern (navigator.clipboard, with a prompt()
+   fallback for a browser/context where the Clipboard API is
+   unavailable, e.g. no secure-context or permission denied). */
+async function copyDevEmail(btn) {
+  const email = 'shwetasingh0199@gmail.com';
+  const original = btn.innerHTML;
+  const showCopied = () => {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>';
+    setTimeout(() => { btn.innerHTML = original; }, 1500);
+  };
+  try {
+    await navigator.clipboard.writeText(email);
+    showCopied();
+  } catch {
+    prompt('Copy this email address:', email);
+  }
 }
 
 function toggleMenu() {
