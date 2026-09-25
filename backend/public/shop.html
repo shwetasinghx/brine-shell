@@ -43,7 +43,24 @@
     </h3>
     <div id="cartBody"><p class="cart-empty">Your cart is empty.</p></div>
     <div id="cartFooter" style="display:none">
+      <div class="promo-box" id="promoBox">
+        <div class="promo-row" id="promoRow">
+          <select id="promoSelect" onchange="onPromoSelectChange()" aria-label="Available promo codes">
+            <option value="">Select a promo code…</option>
+          </select>
+          <div class="promo-manual-row">
+            <input type="text" id="promoInput" placeholder="Or type a code" maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();applyPromoCode();}" />
+            <button class="promo-apply-btn" id="promoApplyBtn" onclick="applyPromoCode()">Apply</button>
+          </div>
+        </div>
+        <div class="promo-applied" id="promoApplied" style="display:none">
+          <span id="promoAppliedText"></span>
+          <button class="promo-remove-btn" onclick="removePromoCode()" aria-label="Remove promo code">Remove</button>
+        </div>
+        <p class="promo-error" id="promoError" style="display:none"></p>
+      </div>
       <div class="cart-total-row"><span>Subtotal</span><span id="cartSub">₹0</span></div>
+      <div class="cart-total-row discount" id="cartDiscountRow" style="display:none"><span>Discount</span><span id="cartDiscount">-₹0</span></div>
       <div class="cart-total-row"><span style="color:var(--muted);font-size:13px">Delivery</span><span id="cartDel" style="color:var(--muted);font-size:13px">₹0</span></div>
       <div class="cart-total-row grand"><span>Total</span><span id="cartGrand">₹0</span></div>
       <button class="cart-checkout-btn" onclick="openCheckout()">Proceed to Pay</button>
@@ -66,24 +83,23 @@
     <button class="modal-close" onclick="closeCheckout()" aria-label="Close checkout">✕</button>
     <p class="eyebrow">Checkout</p>
     <h2>Review &amp; Pay</h2>
-    <div class="form-group"><label>Full Name</label><input type="text" id="cName" placeholder="Riya Sharma" /></div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="cName" placeholder="Riya Sharma" oninput="clearCheckoutFieldError(this)" /></div>
     <div class="form-row-2">
-      <div class="form-group"><label>Email</label><input type="email" id="cEmail" placeholder="you@email.com" /></div>
-      <div class="form-group"><label>Phone</label><input type="tel" id="cPhone" placeholder="9876543210" maxlength="10" /></div>
+      <div class="form-group"><label>Email</label><input type="email" id="cEmail" placeholder="you@email.com" oninput="clearCheckoutFieldError(this)" /></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="cPhone" placeholder="9876543210" maxlength="10" oninput="clearCheckoutFieldError(this)" /></div>
     </div>
     <div class="form-group" id="savedAddressPicker" style="display:none">
       <label>Deliver To</label>
       <select id="cSavedAddress" onchange="onSavedAddressChange()"></select>
     </div>
-    <div class="form-group"><label>Delivery Address</label><textarea id="cAddress" placeholder="House no., street, area, city, state, PIN code" rows="3"></textarea></div>
+    <div class="form-group"><label>Delivery Address</label><textarea id="cAddress" placeholder="House no., street, area, city, state, PIN code" rows="3" oninput="clearCheckoutFieldError(this)"></textarea></div>
     <div class="order-summary" id="orderSummary"></div>
+    <p class="form-error" id="checkoutError"></p>
+    <div class="checkout-warning" id="checkoutWarning"></div>
     <button class="rzp-btn" onclick="initiateRazorpay()">
       <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Pay Securely with Razorpay
     </button>
-    <div class="pay-chips">
-      <span class="pay-chip">Cards</span><span class="pay-chip">UPI</span><span class="pay-chip">PhonePe</span><span class="pay-chip">G Pay</span><span class="pay-chip">NetBanking</span>
-    </div>
   </div>
 </div>
 
@@ -111,7 +127,7 @@
   </div>
 </div>
 
-<div id="toast">Order placed successfully. Thank you.</div>
+<div id="toast"></div>
 
 <div id="site-footer"></div>
 
@@ -122,6 +138,7 @@
 </script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/partials.js"></script>
+<script src="assets/js/notifications.js"></script>
 <script src="assets/js/cart.js"></script>
 <script src="assets/js/wishlist.js"></script>
 <script>
@@ -133,9 +150,179 @@
    including clicking the "Cart" nav link itself. */
 let cart = getCart();
 
-function sub() { return Object.entries(cart).reduce((s,[id,q])=>s+(PRODUCTS.find(p=>p.id===id).price*q),0); }
+// items() is the one place cart ids get resolved against the live
+// catalog -- everything else (sub(), the checkout order summary, the
+// Razorpay payload) is built from its output, so filtering out a
+// stale id here is enough to keep it from ever reaching any of them.
+// A product a customer already added to cart can stop existing later
+// (the admin deletes it) without the tab reloading, so this can't
+// assume every cart id still resolves -- unlike PRODUCTS.find(...)
+// used directly, .filter(Boolean) here mirrors the same defensive
+// pattern renderWishlist() already uses for the same reason.
+function items() {
+  return Object.entries(cart)
+    .filter(([, q]) => q > 0)
+    .map(([id, q]) => {
+      const product = PRODUCTS.find(p => p.id === id);
+      return product ? { ...product, q } : null;
+    })
+    .filter(Boolean);
+}
+function sub() { return items().reduce((s, i) => s + i.price * i.q, 0); }
 function del() { const s=sub(); return s===0?0:s>=SITE_CONFIG.freeDeliveryThreshold?0:SITE_CONFIG.deliveryFee; }
-function items() { return Object.entries(cart).filter(([,q])=>q>0).map(([id,q])=>({...PRODUCTS.find(p=>p.id===id),q})); }
+
+/* ── PROMO CODE ──
+   The Apply button calls the server (POST /api/coupons/apply, the
+   same validateCoupon() logic checkout.controller.js uses) so an
+   invalid, expired, deactivated, or already-used first-order code is
+   rejected right here instead of only failing later at checkout.
+   What's stored in appliedCoupon is exactly what that endpoint
+   returned; the discount shown while cart quantities change
+   afterward is only a client-side *preview* (computeCouponDiscount
+   mirrors the server's percent/flat/max-discount math) -- the actual
+   charge is always recomputed and re-validated from scratch
+   server-side in checkout.controller.js's /create-order, so a code
+   that stops being valid between "Apply" and "Pay" is still caught
+   correctly there. */
+let appliedCoupon = null;
+let AVAILABLE_COUPONS = [];
+
+/* Populates the promo dropdown from the public, sign-in-free
+   /api/coupons/available list (active codes currently inside their
+   date window) -- so a customer can see what offers exist before
+   applying one, instead of needing to already know a code. Picking
+   one from the dropdown fills the manual input and applies it
+   immediately; the manual input stays available for a code that
+   isn't listed (e.g. one shared privately) or if this fetch fails. */
+async function loadAvailableCoupons() {
+  const select = document.getElementById('promoSelect');
+  try {
+    const res = await fetch(`${API_BASE}/api/coupons/available`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) return;
+    AVAILABLE_COUPONS = data.coupons || [];
+    if (!AVAILABLE_COUPONS.length) return;
+    select.innerHTML = '<option value="">Select a promo code…</option>' +
+      AVAILABLE_COUPONS.map(c => `<option value="${c.code}">${c.code} — ${c.description}</option>`).join('');
+  } catch {
+    // Dropdown just stays at its placeholder-only state -- manual entry still works.
+  }
+}
+
+function onPromoSelectChange() {
+  const select = document.getElementById('promoSelect');
+  const code = select.value;
+  select.value = '';
+  if (!code) return;
+  document.getElementById('promoInput').value = code;
+  applyPromoCode();
+}
+
+function computeCouponDiscount(coupon, subtotal) {
+  if (!coupon || subtotal <= 0) return 0;
+  let raw = coupon.type === 'percent' ? Math.round(subtotal * coupon.value / 100) : coupon.value;
+  if (coupon.maxDiscount != null) raw = Math.min(raw, coupon.maxDiscount);
+  return Math.min(raw, subtotal);
+}
+
+function renderPromoUI() {
+  const rowEl = document.getElementById('promoRow');
+  const appliedEl = document.getElementById('promoApplied');
+  if (!rowEl || !appliedEl) return;
+  if (appliedCoupon) {
+    rowEl.style.display = 'none';
+    appliedEl.style.display = 'flex';
+    document.getElementById('promoAppliedText').innerHTML = `<strong>${appliedCoupon.code}</strong> applied &mdash; ${appliedCoupon.description}`;
+  } else {
+    rowEl.style.display = 'flex';
+    appliedEl.style.display = 'none';
+  }
+}
+
+async function applyPromoCode() {
+  const input = document.getElementById('promoInput');
+  const code = input.value.trim();
+  const errorEl = document.getElementById('promoError');
+  errorEl.style.display = 'none';
+  if (!code) return;
+  if (!items().length) {
+    errorEl.textContent = 'Add something to your cart first.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!window.CURRENT_USER) {
+    errorEl.textContent = 'Please sign in to use a promo code.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('promoApplyBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Checking…';
+  try {
+    const res = await fetch(`${API_BASE}/api/coupons/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ code, items: items().map(i => ({ id: i.id, qty: i.q })) }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      errorEl.textContent = data.error || 'That code is not valid.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    appliedCoupon = data;
+    input.value = '';
+    renderCart();
+  } catch {
+    errorEl.textContent = 'Could not check that code right now. Please try again.';
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+function removePromoCode() {
+  appliedCoupon = null;
+  document.getElementById('promoError').style.display = 'none';
+  renderCart();
+}
+
+// Shows a message in the bottom-right toast. tone:'info' (navy) is for
+// background/system notices; the default is the green "you just did
+// something successfully" tone (used for order confirmation).
+let toastTimer = null;
+function showToast(message, { tone = 'success', duration = 4500 } = {}) {
+  const t = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  t.textContent = message;
+  t.classList.toggle('toast-info', tone === 'info');
+  t.style.display = 'block';
+  toastTimer = setTimeout(() => { t.style.display = 'none'; }, duration);
+}
+
+// Drops any cart entry whose product id no longer exists in the live
+// catalog (deleted from the admin page since it was added) and tells
+// the customer why their cart just changed, instead of either
+// crashing renderCart()'s math (the old PRODUCTS.find(id).price threw
+// on a missing product) or silently showing "undefined ₹NaN" rows.
+// Called once on load, right after the catalog is fetched and before
+// the first render -- items()/sub() also filter defensively on every
+// call after that, in case a product is deleted mid-session while
+// this tab is still open.
+function pruneUnavailableCartItems() {
+  const staleIds = Object.keys(cart).filter(id => !PRODUCTS.some(p => p.id === id));
+  if (!staleIds.length) return;
+  staleIds.forEach(id => delete cart[id]);
+  saveCart(cart);
+  const message = staleIds.length === 1
+    ? 'An item in your cart is no longer available and was removed.'
+    : `${staleIds.length} items in your cart are no longer available and were removed.`;
+  showToast(message, { tone: 'info' });
+  if (typeof addNotification === 'function') addNotification(message, { tone: 'info' });
+}
 
 /* ── PRODUCT REVIEWS (read side) ──
    Fetched once for every product in one request (see
@@ -220,8 +407,12 @@ function formatReviewDate(iso) {
 
 /* ── RENDER PRODUCTS ── */
 function renderProducts() {
+  // Each card gets a stable id (product-<id>) so links from elsewhere
+  // on the site -- e.g. a line item on orders.html -- can jump
+  // straight to a specific product here instead of just the top of
+  // the page. See jumpToProductFromHash() below.
   document.getElementById('productsGrid').innerHTML = PRODUCTS.map(p=>`
-    <div class="product-card">
+    <div class="product-card" id="product-${p.id}">
       <div class="pc-img">
         <img src="${p.img}" alt="${p.name}" width="600" height="600" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
         <div class="ph" style="display:none"><p>${p.name.split(' ')[0]}</p></div>
@@ -266,7 +457,7 @@ function renderCart() {
   const total=list.reduce((s,i)=>s+i.q,0);
   if (badge) { badge.textContent=total; badge.style.display=total?'inline':'none'; }
 
-  if(!list.length){ document.getElementById('cartBody').innerHTML='<p class="cart-empty">Your cart is empty.</p>'; document.getElementById('cartFooter').style.display='none'; return; }
+  if(!list.length){ document.getElementById('cartBody').innerHTML='<p class="cart-empty">Your cart is empty.</p>'; document.getElementById('cartFooter').style.display='none'; appliedCoupon=null; return; }
   document.getElementById('cartFooter').style.display='block';
   document.getElementById('cartBody').innerHTML=list.map(i=>`
     <div class="cart-item">
@@ -288,7 +479,16 @@ function renderCart() {
   const s=sub(),d=del();
   document.getElementById('cartSub').textContent=`₹${s}`;
   document.getElementById('cartDel').textContent=d===0?'FREE':`₹${d}`;
-  document.getElementById('cartGrand').textContent=`₹${s+d}`;
+  const discount = appliedCoupon ? computeCouponDiscount(appliedCoupon, s) : 0;
+  const discountRowEl = document.getElementById('cartDiscountRow');
+  if (discount > 0) {
+    discountRowEl.style.display = 'flex';
+    document.getElementById('cartDiscount').textContent = `-₹${discount}`;
+  } else {
+    discountRowEl.style.display = 'none';
+  }
+  document.getElementById('cartGrand').textContent=`₹${Math.max(0, s - discount) + d}`;
+  renderPromoUI();
 }
 
 function syncCartUI() {
@@ -378,6 +578,7 @@ async function shareProduct(id) {
 function openCheckout() {
   if(!items().length) return;
   if (!window.CURRENT_USER) { openSigninPrompt(); return; }
+  clearCheckoutErrors();
   // Just a convenience prefill -- freely editable either way. The
   // server separately tracks the signed-in account's own email
   // (Account Email) purely to match orders back to "My Orders", so
@@ -400,10 +601,12 @@ function openCheckout() {
     document.getElementById('savedAddressPicker').style.display = 'none';
   }
   const s=sub(),d=del();
+  const discount = appliedCoupon ? computeCouponDiscount(appliedCoupon, s) : 0;
   document.getElementById('orderSummary').innerHTML=`
     ${items().map(i=>`<div class="order-row"><span style="display:flex;align-items:center;gap:8px;min-width:0"><img src="${i.img}" alt="" class="order-row-img" onerror="this.style.display='none'" />${i.name} ×${i.q}</span><span>₹${i.price*i.q}</span></div>`).join('')}
+    ${discount>0?`<div class="order-row"><span>Discount (${appliedCoupon.code})</span><span>-₹${discount}</span></div>`:''}
     <div class="order-row"><span>Delivery</span><span>${d===0?'FREE':'₹'+d}</span></div>
-    <div class="order-row total"><span>Total</span><span>₹${s+d}</span></div>`;
+    <div class="order-row total"><span>Total</span><span>₹${Math.max(0, s - discount) + d}</span></div>`;
   document.getElementById('overlay').classList.add('open');
 }
 function closeCheckout() { document.getElementById('overlay').classList.remove('open'); }
@@ -469,14 +672,75 @@ function onSavedAddressChange() {
    the total from data/products.json and creates the Razorpay order
    itself. After payment, we send the signature back to the backend
    for verification before treating the order as real. */
+/* Inline checkout feedback -- replaces native alert() popups in the
+   checkout flow with on-brand UI: field-level highlighting for
+   validation issues, a shared error banner for anything else, and a
+   distinct persistent warning for the rare "payment went through but
+   we couldn't verify it" case, since that one carries a payment ID
+   the customer needs to keep. */
+const CHECKOUT_FIELD_IDS = ['cName', 'cEmail', 'cPhone', 'cAddress'];
+
+function clearCheckoutErrors() {
+  CHECKOUT_FIELD_IDS.forEach(id => document.getElementById(id).classList.remove('input-error'));
+  const errEl = document.getElementById('checkoutError');
+  errEl.classList.remove('visible');
+  errEl.textContent = '';
+  const warnEl = document.getElementById('checkoutWarning');
+  warnEl.classList.remove('visible');
+  warnEl.innerHTML = '';
+}
+
+function clearCheckoutFieldError(el) {
+  el.classList.remove('input-error');
+  const anyLeft = CHECKOUT_FIELD_IDS.some(id => document.getElementById(id).classList.contains('input-error'));
+  if (!anyLeft) document.getElementById('checkoutError').classList.remove('visible');
+}
+
+function showCheckoutError(message, invalidIds) {
+  invalidIds = invalidIds || [];
+  const errEl = document.getElementById('checkoutError');
+  errEl.textContent = message;
+  errEl.classList.add('visible');
+  invalidIds.forEach(id => document.getElementById(id).classList.add('input-error'));
+  const target = invalidIds.length ? document.getElementById(invalidIds[0]) : errEl;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (invalidIds.length) target.focus();
+}
+
+function showCheckoutWarning(paymentId) {
+  const warnEl = document.getElementById('checkoutWarning');
+  warnEl.innerHTML = 'Your payment went through, but we could not confirm it automatically. '
+    + '<strong>Please save this payment ID and contact us</strong> so we can complete your order right away.'
+    + '<div class="payment-id-row"><span class="payment-id-chip" id="failedPaymentIdChip">' + paymentId + '</span>'
+    + '<button type="button" class="copy-id-btn" onclick="copyCheckoutPaymentId(this)">Copy ID</button></div>';
+  warnEl.classList.add('visible');
+  warnEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function copyCheckoutPaymentId(btn) {
+  const id = document.getElementById('failedPaymentIdChip').textContent;
+  const done = () => { const original = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = original; }, 1800); };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(id).then(done).catch(done);
+  else done();
+}
+
 async function initiateRazorpay() {
   const name=document.getElementById('cName').value.trim();
   const email=document.getElementById('cEmail').value.trim();
   const phone=document.getElementById('cPhone').value.trim();
   const address=document.getElementById('cAddress').value.trim();
-  if(!name||!email||!phone||!address){ alert('Please fill in your name, email, phone and delivery address.'); return; }
-  if(phone.length!==10){ alert('Enter a valid 10-digit phone number.'); return; }
-  if(address.length<10){ alert('Please enter a complete delivery address.'); return; }
+  clearCheckoutErrors();
+  const missingFields = [];
+  if(!name) missingFields.push('cName');
+  if(!email) missingFields.push('cEmail');
+  if(!phone) missingFields.push('cPhone');
+  if(!address) missingFields.push('cAddress');
+  if(missingFields.length){
+    showCheckoutError('Please fill in the highlighted field' + (missingFields.length > 1 ? 's' : '') + ' to continue.', missingFields);
+    return;
+  }
+  if(phone.length!==10){ showCheckoutError('Enter a valid 10-digit phone number.', ['cPhone']); return; }
+  if(address.length<10){ showCheckoutError('Please enter a complete delivery address.', ['cAddress']); return; }
 
   const payBtn = document.querySelector('.rzp-btn');
   payBtn.disabled = true;
@@ -490,13 +754,14 @@ async function initiateRazorpay() {
       body: JSON.stringify({
         items: items().map(i => ({ id: i.id, qty: i.q })),
         customer: { name, email, phone, address },
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
       }),
     });
     const data = await res.json();
     if (res.status === 401) {
       closeCheckout();
       openSigninPrompt();
-      throw new Error('Please sign in to place your order.');
+      return;
     }
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not start checkout.');
 
@@ -527,20 +792,19 @@ async function initiateRazorpay() {
           closeCheckout();
           cart={};
           saveCart(cart);
+          appliedCoupon = null;
           renderProducts();
           renderCart();
-          const t=document.getElementById('toast');
-          t.style.display='block';
-          setTimeout(()=>t.style.display='none',4500);
+          showToast('Order placed successfully. Thank you.');
         } catch (verifyErr) {
-          alert('Payment went through but could not be verified. Please contact us with your payment ID: ' + response.razorpay_payment_id);
+          showCheckoutWarning(response.razorpay_payment_id);
         }
       }
     });
-    rzp.on('payment.failed', r => alert('Payment failed: ' + r.error.description));
+    rzp.on('payment.failed', r => showCheckoutError('Payment failed: ' + r.error.description));
     rzp.open();
   } catch (err) {
-    alert(err.message || 'Could not start checkout. Please try again.');
+    showCheckoutError(err.message || 'Could not start checkout. Please try again.');
   } finally {
     payBtn.disabled = false;
     payBtn.innerHTML = originalLabel;
@@ -551,7 +815,20 @@ async function initiateRazorpay() {
 document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCheckout(); });
 document.getElementById('signinOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSigninPrompt(); });
 document.getElementById('reviewsOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeReviewsModal(); });
-document.addEventListener('DOMContentLoaded', async ()=>{ await window.PRODUCTS_READY; await loadReviewSummaries(); renderProducts(); syncCartUI(); renderCart(); renderWishlist(); });
+document.addEventListener('DOMContentLoaded', async ()=>{ loadAvailableCoupons(); await window.PRODUCTS_READY; await loadReviewSummaries(); renderProducts(); pruneUnavailableCartItems(); syncCartUI(); renderCart(); renderWishlist(); jumpToProductFromHash(); });
+
+// Scrolls to and briefly highlights the product named in the URL hash
+// (e.g. shop.html#product-cubes, as linked from an order-detail line
+// item on orders.html), so it's obvious which card was clicked
+// through to rather than just landing at the top of a long grid.
+function jumpToProductFromHash() {
+  if (!location.hash.startsWith('#product-')) return;
+  const card = document.querySelector(location.hash);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.add('jump-highlight');
+  setTimeout(() => card.classList.remove('jump-highlight'), 2200);
+}
 </script>
 </body>
 </html>

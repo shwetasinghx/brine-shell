@@ -1,9 +1,10 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { priceCart } = require('../utils/catalog.util');
+const { validateCoupon } = require('../utils/coupons.util');
 const { createOrder, verifySignature, verifyWebhookSignature, getKeyId } = require('../services/razorpay.service');
 const { appendRow, updateRowByKey, getRows } = require('../services/sheets.service');
-const { sendEmail } = require('../services/resend.service');
+const { sendEmail } = require('../services/mailer.service');
 const { requireAuth } = require('../utils/auth.util');
 
 const router = express.Router();
@@ -16,6 +17,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const checkoutLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40 });
 
 // Orders sheet columns, same layout routes/orders.js and admin.js use.
+// Column N (cancelReason) already exists (orders.controller.js's
+// /:orderId/cancel writes it directly by letter) -- couponCode/discount
+// are appended AFTER it, at columns O/P, so they don't collide with it.
+// See backend/README.md for the header row to add these two under.
 const COL = { id: 0, date: 1, paymentStatus: 2, name: 3, email: 4, phone: 5, items: 6, total: 7, status: 8 };
 
 /* The single place that flips an order to "paid" — called from BOTH
@@ -47,7 +52,7 @@ async function markOrderPaid(orderId, paymentId) {
   return { found: true, alreadyPaid: false };
 }
 
-/* Step 1: browser sends { items: [{id, qty}], customer: {name, email, phone} }.
+/* Step 1: browser sends { items: [{id, qty}], customer: {name, email, phone}, couponCode? }.
    We price the cart ourselves from data/products.json — the amount
    the browser thinks the total is never gets trusted — then ask
    Razorpay to create an order for that (server-computed) amount.
@@ -57,7 +62,7 @@ async function markOrderPaid(orderId, paymentId) {
    checkout flow from signed-out visitors -- see shop.html -- but that's
    just UX; this middleware is what makes guest checkout impossible.) */
 router.post('/create-order', checkoutLimiter, requireAuth, async (req, res) => {
-  const { items, customer } = req.body || {};
+  const { items, customer, couponCode } = req.body || {};
   const name = String(customer?.name || '').trim().slice(0, 120);
   const email = String(customer?.email || '').trim().slice(0, 200);
   const phone = String(customer?.phone || '').trim().slice(0, 20);
@@ -92,11 +97,37 @@ router.post('/create-order', checkoutLimiter, requireAuth, async (req, res) => {
     return res.status(400).json({ ok: false, error: err.message });
   }
 
+  // A coupon applied in the cart is re-validated from scratch here,
+  // against the FINAL items/subtotal at the moment of payment -- never
+  // trusting a discount amount the browser echoes back from an earlier
+  // /api/coupons/apply preview. This is what catches a code that
+  // expired, got deactivated, or (for a first-order code) got used up
+  // by an order placed in another tab, in the seconds between the
+  // customer applying it and actually paying.
+  let discount = 0;
+  let appliedCouponCode = '';
+  if (couponCode) {
+    let couponResult;
+    try {
+      couponResult = await validateCoupon({ code: couponCode, subtotal: priced.subtotal, accountEmail });
+    } catch (err) {
+      console.error('Coupon re-validation failed at checkout:', err.message);
+      return res.status(502).json({ ok: false, error: 'Could not verify your promo code right now. Please try again.' });
+    }
+    if (!couponResult.ok) {
+      return res.status(couponResult.status).json({ ok: false, error: couponResult.error });
+    }
+    discount = couponResult.discount;
+    appliedCouponCode = couponResult.coupon.code;
+  }
+
+  const finalTotal = Math.max(0, priced.subtotal - discount) + priced.deliveryFee;
+
   const receipt = `bs_${Date.now()}`;
   let order;
   try {
     order = await createOrder({
-      amountInPaise: priced.total * 100,
+      amountInPaise: finalTotal * 100,
       currency: priced.currency,
       receipt,
       notes: { name, email, phone },
@@ -119,7 +150,12 @@ router.post('/create-order', checkoutLimiter, requireAuth, async (req, res) => {
     const itemIds = priced.lineItems.map(i => `${i.id}:${i.qty}`).join(';');
 
     // Column order matches the Orders sheet header:
-    // Order ID | Date | Payment Status | Name | Email | Phone | Items | Total | Fulfillment Status | Delivered At | Account Email | Address | Item IDs
+    // Order ID | Date | Payment Status | Name | Email | Phone | Items | Total | Fulfillment Status | Delivered At | Account Email | Address | Item IDs | Cancel Reason | Coupon Code | Discount
+    // (Cancel Reason, column N, is left blank here -- it's only ever
+    // set later, directly by column letter, if the customer cancels
+    // from orders.html. Coupon Code/Discount go in the two columns
+    // after it, O and P, so a brand-new appendRow doesn't overwrite
+    // where that targeted N-column update lands.)
     await appendRow('Orders', [
       order.id,
       new Date().toISOString(),
@@ -128,12 +164,15 @@ router.post('/create-order', checkoutLimiter, requireAuth, async (req, res) => {
       email,
       phone,
       priced.lineItems.map(i => `${i.name} x${i.qty}`).join('; '),
-      priced.total,
+      finalTotal,
       '', // fulfillment status is set once payment is verified
       '', // delivered-at timestamp, filled in only once status reaches "Delivered"
       accountEmail, // signed-in account's email, if any -- used only to match "My Orders"
       address, // delivery address typed at checkout -- shown to the admin for fulfillment
       itemIds,
+      '', // cancel reason -- blank unless/until the customer cancels (column N)
+      appliedCouponCode, // '' when no coupon was used
+      discount, // rupees knocked off the subtotal by the coupon above, 0 if none
     ]);
   } catch (err) {
     console.error('Sheets append failed (order):', err.message);
@@ -146,7 +185,7 @@ router.post('/create-order', checkoutLimiter, requireAuth, async (req, res) => {
     amount: order.amount,
     currency: order.currency,
     keyId: getKeyId(),
-    summary: priced,
+    summary: { ...priced, discount, couponCode: appliedCouponCode, total: finalTotal },
   });
 });
 

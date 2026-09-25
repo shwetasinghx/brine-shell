@@ -19,7 +19,7 @@ backend/
     catalog.js           reads ../data/products.json — the ONE
                           place prices live, shared with the frontend
     razorpay.js           order creation + HMAC signature verification
-    resend.js              transactional email
+    mailer.js              transactional email (SMTP)
     sheets.js               appends/updates rows in a Google Sheet
   .env.example           copy to .env and fill in (never commit .env)
 ```
@@ -57,16 +57,23 @@ directly. Change a price in exactly one place.
 6. Copy the Sheet ID from its URL (`.../d/`**`THIS_PART`**`/edit`) into
    `GOOGLE_SHEET_ID`.
 
-### Resend (sends contact/order emails)
+### Email (Hostinger business mailbox, via SMTP)
 
-1. Sign up at [resend.com](https://resend.com).
-2. Add and verify the `brineandshell.com` domain (it'll give you DNS
-   records to add — do that in Hostinger's DNS settings for the
-   domain).
-3. Create an API key, put it in `RESEND_API_KEY`.
-4. Set `CONTACT_FROM_EMAIL` to an address on your verified domain
-   (e.g. `orders@brineandshell.com`) and `CONTACT_TO_EMAIL` to where
-   you want contact-form messages delivered (e.g. `support@brineandshell.com`).
+No third-party provider or DNS verification needed -- this sends
+straight through your Hostinger mailbox's own SMTP server, the same
+one Webmail uses.
+
+1. In hPanel, open **Emails** and create (or note) the mailbox you
+   want to send from, e.g. `support@brineandshell.com`.
+2. Put that address in `SMTP_USER` and its password in `SMTP_PASS`.
+   `SMTP_HOST`/`SMTP_PORT` already default to Hostinger's standard
+   (`smtp.hostinger.com` / `465`) -- only change them if hPanel's
+   "Configure Email Client" page for that mailbox shows something
+   different.
+3. Set `MAIL_FROM` to the address you want recipients to see as the
+   sender (usually the same as `SMTP_USER`), and `CONTACT_TO_EMAIL` to
+   where you want contact-form messages, new-review notices, and
+   return requests delivered (e.g. `support@brineandshell.com`).
 
 ### Razorpay
 

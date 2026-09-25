@@ -1,0 +1,69 @@
+{
+  "coupons": [
+    {
+      "code": "FIRST10",
+      "label": "First Order",
+      "description": "10% off your first order",
+      "type": "percent",
+      "value": 10,
+      "scope": "first-order",
+      "active": true,
+      "startDate": null,
+      "endDate": null,
+      "minOrder": 0,
+      "maxDiscount": null
+    },
+    {
+      "code": "NAVRATRI15",
+      "label": "Navratri",
+      "description": "15% off for Navratri",
+      "type": "percent",
+      "value": 15,
+      "scope": "general",
+      "active": true,
+      "startDate": "2026-10-10",
+      "endDate": "2026-10-21",
+      "minOrder": 0,
+      "maxDiscount": 300
+    },
+    {
+      "code": "DIWALI20",
+      "label": "Diwali",
+      "description": "20% off for Diwali",
+      "type": "percent",
+      "value": 20,
+      "scope": "general",
+      "active": true,
+      "startDate": "2026-10-25",
+      "endDate": "2026-11-12",
+      "minOrder": 0,
+      "maxDiscount": 400
+    },
+    {
+      "code": "NEWYEAR10",
+      "label": "New Year",
+      "description": "10% off to start the year",
+      "type": "percent",
+      "value": 10,
+      "scope": "general",
+      "active": true,
+      "startDate": "2026-12-28",
+      "endDate": "2027-01-03",
+      "minOrder": 0,
+      "maxDiscount": 250
+    },
+    {
+      "code": "REPUBLIC15",
+      "label": "Republic Day",
+      "description": "15% off for Republic Day",
+      "type": "percent",
+      "value": 15,
+      "scope": "general",
+      "active": true,
+      "startDate": "2027-01-20",
+      "endDate": "2027-01-27",
+      "minOrder": 0,
+      "maxDiscount": 300
+    }
+  ]
+}

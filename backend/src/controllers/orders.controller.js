@@ -1,7 +1,7 @@
 const express = require('express');
 const { getRows, updateRowByKey } = require('../services/sheets.service');
 const { requireAuth } = require('../utils/auth.util');
-const { sendEmail } = require('../services/resend.service');
+const { sendEmail } = require('../services/mailer.service');
 const { STAGES, CANCELLED, stageIndex } = require('../utils/order-status.util');
 const { RETURNS_COL } = require('../utils/returns-schema.util');
 const { REVIEWS_COL } = require('../utils/reviews-schema.util');
@@ -28,6 +28,22 @@ function orderProductIds(itemIdsCell) {
     .filter(Boolean);
 }
 
+// "cubes:2;dual:1" -> [{id:'cubes',qty:2},{id:'dual',qty:1}] -- same cell
+// as orderProductIds above, but keeping the quantity too so orders.html
+// can render one row per product (image, name, qty, line total) instead
+// of just the flattened "Items" display string. Orders placed before
+// this column existed come back as [], same fallback as itemIds.
+function parseLineItems(itemIdsCell) {
+  return String(itemIdsCell || '')
+    .split(';')
+    .map(pair => {
+      const [id, qtyStr] = pair.split(':');
+      const qty = parseInt(qtyStr, 10);
+      return id ? { id, qty: Number.isFinite(qty) && qty > 0 ? qty : 1 } : null;
+    })
+    .filter(Boolean);
+}
+
 function rowToSummary(row) {
   return {
     orderId: row[COL.id],
@@ -42,6 +58,11 @@ function rowToSummary(row) {
     // orders.html simply won't offer a "Write a Review" button for
     // those, same as it can't offer a return on a guest-checkout order.
     itemIds: orderProductIds(row[COL.itemIds]),
+    // Same source column, kept as a separate field (rather than
+    // reshaping itemIds) so the existing review-matching logic above
+    // is untouched -- this is purely additive, for the order-detail
+    // line-item display (image + qty + link to the shop page).
+    lineItems: parseLineItems(row[COL.itemIds]),
   };
 }
 

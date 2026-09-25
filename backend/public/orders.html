@@ -98,7 +98,7 @@
         </div>
         <button class="form-submit" onclick="submitReview()">Submit Review</button>
         <button type="button" class="btn-sm" style="background:transparent;color:var(--muted);border:1px solid #ddd;margin-left:8px;" onclick="closeReviewForm()">Cancel</button>
-        <div class="form-success" id="reviewSuccess">Thanks! Your review is awaiting approval.</div>
+        <div class="form-success" id="reviewSuccess">Thanks for your review!</div>
         <div class="form-error" id="reviewError"></div>
       </div>
     </div>
@@ -130,7 +130,7 @@
             <div id="recorderControls">
               <button type="button" class="btn-sm" id="startRecordBtn" onclick="startVideoRecording()">Start Recording</button>
               <button type="button" class="btn-sm" id="stopRecordBtn" onclick="stopVideoRecording()" style="display:none">Stop Recording</button>
-              <button type="button" class="btn-sm" id="retakeRecordBtn" onclick="retakeVideoRecording()" style="display:none">Retake</button>
+              <button type="button" class="btn-sm" id="deleteRecordBtn" onclick="deleteVideoRecording()" style="display:none;background:transparent;color:#b3261e;border:1px solid #e3a8a1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete</button><button type="button" class="btn-sm" id="retakeRecordBtn" onclick="retakeVideoRecording()" style="display:none;background:transparent;color:var(--navy);border:1px solid var(--navy);margin-left:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M3 12a9 9 0 1 1 2.64 6.36"/><path d="M3 21v-6h6"/></svg>Retake</button>
               <span id="recordTimer"></span>
             </div>
           </div>
@@ -153,6 +153,7 @@
 </script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/partials.js"></script>
+<script src="assets/js/notifications.js"></script>
 <script>
 async function loadOrders() {
   document.getElementById('accountSignedOut').style.display = 'none';
@@ -204,6 +205,13 @@ const RETURN_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic
 const RETURN_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
 const RETURN_VIDEO_MIN_SECONDS = 5;
 const RETURN_VIDEO_MAX_SECONDS = 60;
+// A real clip this short is still comfortably above this many bytes
+// even at very low bitrate. Anything under it means the recording
+// didn't actually capture real video/audio data -- a real failure
+// mode on some devices/browsers where getUserMedia grants access and
+// the on-screen timer runs, but the encoder never produces real
+// frames (silently, with no error of its own).
+const RETURN_VIDEO_MIN_BYTES = 20 * 1024;
 const RETURN_MAX_IMAGE_MB = 8;
 const RETURN_MAX_VIDEO_MB = 50;
 const RETURN_WINDOW_MS = 2 * 24 * 60 * 60 * 1000; // 2 days, matches backend/routes/returns.js
@@ -280,7 +288,7 @@ async function openOrder(orderId) {
       applyReturnEligibility(data.order, data.returnStatus);
     }
 
-    document.getElementById('odItems').innerHTML = `<div class="order-row"><span>${data.order.items}</span><span>₹${data.order.total}</span></div>`;
+    document.getElementById('odItems').innerHTML = renderOrderItems(data.order);
     renderOrderReviews(data.order, data.reviewStatuses || {}, data.returnStatus);
     if (data.order.phone || data.order.address) {
       document.getElementById('odShipPhone').textContent = data.order.phone ? `Phone: ${data.order.phone}` : '';
@@ -403,7 +411,7 @@ function applyReturnStatus(returnStatus) {
   if (returnStatus === 'Approved') {
     banner.style.background = '#e6f4ea';
     banner.style.color = '#1e7e34';
-    banner.textContent = 'Return approved. We\'ll follow up by email with next steps.';
+    banner.textContent = 'Return approved. Check back here for next steps.';
   } else if (returnStatus === 'Cancelled') {
     banner.style.background = '#fdecea';
     banner.style.color = '#b3261e';
@@ -453,7 +461,7 @@ let recordTimerInterval = null;
 let recordSecondsElapsed = 0;
 
 function pickVideoMimeType() {
-  const candidates = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
+  const candidates = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm', 'video/mp4'];
   return candidates.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
 }
 
@@ -503,14 +511,45 @@ async function startVideoRecording() {
     videoStream = null;
     preview.srcObject = null;
     preview.muted = false;
+
+    if (recordedVideoBlob.size < RETURN_VIDEO_MIN_BYTES) {
+      // Genuinely empty/near-empty capture -- don't hand this to the
+      // customer as if it were fine. Reset all the way back to idle
+      // and say plainly that the recording failed, rather than a
+      // generic "please attach a video" they'd otherwise only see
+      // after clicking Submit.
+      recordedVideoBlob = null;
+      recordedChunks = [];
+      preview.removeAttribute('src');
+      preview.load();
+      preview.controls = false;
+      preview.classList.remove('has-content');
+      document.getElementById('deleteRecordBtn').style.display = 'none';
+      document.getElementById('retakeRecordBtn').style.display = 'none';
+      document.getElementById('startRecordBtn').style.display = 'inline-block';
+      document.getElementById('recordTimer').textContent = '';
+      err.textContent = "That recording came out empty -- your camera or mic may not have actually been captured. Please try again.";
+      err.style.display = 'block';
+      return;
+    }
+
     preview.controls = true;
     preview.src = URL.createObjectURL(recordedVideoBlob);
     preview.play().catch(() => {});
+    // Real size + type of the actual file that will be uploaded --
+    // visible proof it captured something real, not just a timer
+    // that says it did. Written here (not in stopVideoRecording)
+    // because this is the first point the blob genuinely exists.
+    const sizeMB = (recordedVideoBlob.size / 1024 / 1024).toFixed(1);
+    const typeLabel = ((recordedVideoBlob.type || 'video/unknown').split(';')[0].split('/')[1] || 'unknown').toUpperCase();
+    document.getElementById('recordTimer').textContent =
+      `Recorded ${recordSecondsElapsed}s \u00b7 ${sizeMB}MB \u00b7 ${typeLabel}. Looks good, or delete/retake below.`;
   };
   videoRecorder.start();
 
   recordSecondsElapsed = 0;
   document.getElementById('startRecordBtn').style.display = 'none';
+  document.getElementById('deleteRecordBtn').style.display = 'none';
   document.getElementById('retakeRecordBtn').style.display = 'none';
   const stopBtn = document.getElementById('stopRecordBtn');
   stopBtn.style.display = 'inline-block';
@@ -531,11 +570,12 @@ function stopVideoRecording() {
   if (videoRecorder && videoRecorder.state !== 'inactive') videoRecorder.stop();
   clearInterval(recordTimerInterval);
   document.getElementById('stopRecordBtn').style.display = 'none';
+  document.getElementById('deleteRecordBtn').style.display = 'inline-block';
   document.getElementById('retakeRecordBtn').style.display = 'inline-block';
-  document.getElementById('recordTimer').textContent = `Recorded ${recordSecondsElapsed}s. Looks good, or retake below.`;
+  document.getElementById('recordTimer').textContent = 'Processing recording\u2026';
 }
 
-function retakeVideoRecording() {
+function deleteVideoRecording() {
   stopVideoCameraIfRunning();
   recordedVideoBlob = null;
   recordedChunks = [];
@@ -546,8 +586,17 @@ function retakeVideoRecording() {
   preview.controls = false;
   preview.classList.remove('has-content');
   document.getElementById('recordTimer').textContent = '';
+  document.getElementById('deleteRecordBtn').style.display = 'none';
   document.getElementById('retakeRecordBtn').style.display = 'none';
   document.getElementById('startRecordBtn').style.display = 'inline-block';
+}
+
+// Same reset as Delete, but immediately jumps back into recording --
+// one click to redo instead of delete, then separately press Start
+// Recording again.
+function retakeVideoRecording() {
+  deleteVideoRecording();
+  startVideoRecording();
 }
 
 // Same "cap while typing" pattern as the saved-address field on
@@ -563,6 +612,34 @@ function capReturnReasonWords(el) {
   }
   const count = el.value.trim() ? el.value.trim().split(/\s+/).filter(Boolean).length : 0;
   document.getElementById('returnReasonCount').textContent = `${count}/${RETURN_REASON_MAX_WORDS} words`;
+}
+
+/* ── ORDER ITEMS ──
+   One row per product in the order (data.order.lineItems -- same
+   Item IDs column as the review section below, but keeping quantity),
+   each showing the product's photo and linking through to its card on
+   the shop page. Falls back to the old flattened "Items" summary
+   string for orders placed before that column existed. */
+function renderOrderItems(order) {
+  if (!order.lineItems || !order.lineItems.length) {
+    return `<div class="order-row"><span>${escapeHtml(order.items || '')}</span><span>₹${order.total}</span></div>`;
+  }
+  const rows = order.lineItems.map(li => {
+    const product = PRODUCTS.find(p => p.id === li.id);
+    const name = product ? product.name : li.id;
+    const imgTag = product
+      ? `<img src="${product.img}" alt="" class="order-row-img" onerror="this.style.display='none'" />`
+      : '';
+    const lineTotal = product ? product.price * li.qty : null;
+    const inner = `<span style="display:flex;align-items:center;gap:8px;min-width:0">${imgTag}${escapeHtml(name)} ×${li.qty}</span><span>${lineTotal !== null ? '₹' + lineTotal : ''}</span>`;
+    // Only link through to the shop page when the product still
+    // exists in the live catalog -- a discontinued product has
+    // nothing to click through to.
+    return product
+      ? `<a class="order-row order-row-link" href="shop.html#product-${encodeURIComponent(li.id)}">${inner}</a>`
+      : `<div class="order-row">${inner}</div>`;
+  }).join('');
+  return `${rows}<div class="order-row total"><span>Total</span><span>₹${order.total}</span></div>`;
 }
 
 /* ── PRODUCT REVIEWS ──
@@ -783,9 +860,16 @@ async function submitReturn() {
   // recorded blob needs a filename+extension for FormData/multer, so
   // one is derived from its actual mimetype here.
   const videoExt = (recordedVideoBlob.type || '').includes('mp4') ? 'mp4' : 'webm';
-  const videoFile = new File([recordedVideoBlob], `unboxing-${Date.now()}.${videoExt}`, { type: recordedVideoBlob.type || 'video/webm' });
+  const videoFilename = `unboxing-${Date.now()}.${videoExt}`;
   const imageOk = validateReturnFile(imageFile, RETURN_IMAGE_TYPES, RETURN_MAX_IMAGE_MB, imageErr, 'photo');
-  const videoOk = validateReturnFile(videoFile, RETURN_VIDEO_TYPES, RETURN_MAX_VIDEO_MB, videoErr, 'video');
+  // Validated and uploaded as the raw Blob itself (with a filename
+  // passed as FormData.append's 3rd argument) rather than wrapping it
+  // in `new File(...)` first -- one fewer transformation between the
+  // recorder's actual output and what the network sends, which
+  // matters on the handful of mobile browsers/WebViews known to
+  // mishandle a manually-constructed File built from a MediaRecorder
+  // Blob when it's appended to FormData.
+  const videoOk = validateReturnFile(recordedVideoBlob, RETURN_VIDEO_TYPES, RETURN_MAX_VIDEO_MB, videoErr, 'video');
   if (!imageOk || !videoOk) return;
 
   const btn = document.querySelector('#returnForm .form-submit');
@@ -798,7 +882,20 @@ async function submitReturn() {
     body.append('reason', reason);
     body.append('challenge', document.getElementById('videoChallengeText').textContent);
     body.append('image', imageFile);
-    body.append('video', videoFile);
+    // Re-wrapped in a fresh Blob with a plain, codec-free type right
+    // here, immediately before upload. recordedVideoBlob.type is
+    // whatever pickVideoMimeType() picked -- e.g.
+    // "video/webm;codecs=vp8,opus" -- and that comma inside the
+    // codecs parameter is very likely what the server's multipart
+    // parser was choking on when reading this part's Content-Type
+    // header, which is exactly the situation multipart parsers fall
+    // back to "text/plain" for: a Content-Type it couldn't parse.
+    // The server only ever needed the bare "video/webm" anyway (it
+    // strips codecs itself before checking), so there's no reason to
+    // send the full codecs string over the wire at all.
+    const videoBaseType = (recordedVideoBlob.type || 'video/webm').split(';')[0];
+    const uploadBlob = new Blob([recordedVideoBlob], { type: videoBaseType });
+    body.append('video', uploadBlob, videoFilename);
     // No Content-Type header here -- the browser sets the multipart
     // boundary itself; setting it manually breaks the upload.
     const res = await fetch(`${API_BASE}/api/returns`, {
@@ -812,7 +909,7 @@ async function submitReturn() {
     document.getElementById('returnReason').value = '';
     document.getElementById('returnReasonCount').textContent = '0/100 words';
     imageInput.value = '';
-    retakeVideoRecording();
+    deleteVideoRecording();
     document.getElementById('returnForm').style.display = 'none';
     applyReturnStatus('Requested');
   } catch (e) {

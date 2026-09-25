@@ -6,71 +6,332 @@
   <title>Order Admin | Brine & Shell</title>
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" type="image/png" href="assets/images/brineandshell.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --navy:#1C1B3A; --gold:#C9A45A; --cream:#FAF0E2; --white:#fff; --muted:#6b6b6b; --text:#2a2a2a; }
+    :root {
+      --navy: #1C1B3A; --navy-lt: #2e2d54;
+      --gold: #C9A45A; --gold-lt: #e4c07e;
+      --cream: #FAF0E2; --cream-dk: #F0DFC0;
+      --white: #fff; --muted: #6b6b6b; --text: #2a2a2a;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(28,27,58,.10);
+      --shadow-lg: 0 16px 56px rgba(28,27,58,.18);
+    }
     * { box-sizing: border-box; }
     body { margin:0; font-family:'Inter',sans-serif; background:var(--cream); color:var(--text); }
-    .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 20px 80px; }
-    h1 { color: var(--navy); font-size: 26px; margin: 0 0 4px; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 20px 80px; }
+    .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    h1 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 28px; margin: 0 0 4px; }
     .sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
-    .card { background: var(--white); border-radius: 14px; padding: 32px; box-shadow: 0 4px 24px rgba(28,27,58,.1); }
-    .login-card { max-width: 360px; margin: 80px auto; text-align: center; }
-    @media (max-width: 420px) { .login-card { margin: 60px auto; max-width: 92vw; } }
-    .login-card h1 { margin-bottom: 20px; }
-    input[type=password] { width: 100%; padding: 12px 16px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 14px; }
+    .card { background: var(--white); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); }
+
+    /* ---- Login screen ---- */
+    .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 20px; }
+    .login-glow { position: absolute; width: 420px; height: 420px; background: var(--gold); opacity: .14; border-radius: 50%; filter: blur(30px); z-index: 0; }
+    .login-glow.g1 { top: -160px; left: -140px; }
+    .login-glow.g2 { bottom: -180px; right: -160px; }
+    .login-card { position: relative; z-index: 1; max-width: 380px; width: 100%; margin: 0; text-align: center; box-shadow: var(--shadow-lg); border: 1px solid rgba(201,164,90,.18); }
+    .login-logo { width: 64px; height: 64px; border-radius: 50%; object-fit: contain; background: var(--cream); padding: 8px; margin: 0 auto 18px; display: block; box-shadow: 0 4px 16px rgba(28,27,58,.12); }
+    .login-card .eyebrow { display: flex; justify-content: center; }
+    .login-card h1 { margin-bottom: 6px; font-size: 26px; }
+    .login-card .sub { margin-bottom: 26px; }
+    .field-group { position: relative; margin-bottom: 16px; text-align: left; }
+    input[type=password], input.pw-visible {
+      width: 100%; padding: 13px 52px 13px 16px; border: 1.5px solid #e4dccb; border-radius: 10px;
+      font-size: 15px; font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input[type=password]:focus, input.pw-visible:focus {
+      outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,164,90,.22); background: var(--white);
+    }
+    .pw-toggle {
+      position: absolute; right: 6px; top: 6px; bottom: 6px; padding: 0 10px; background: none; border: none;
+      color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .3px; cursor: pointer; border-radius: 8px;
+    }
+    .pw-toggle:hover { color: var(--navy); background: var(--cream-dk); }
     button { cursor: pointer; font-family: inherit; }
-    .btn-primary { width: 100%; padding: 13px; background: var(--navy); color: #fff; border: none; border-radius: 50px; font-size: 15px; font-weight: 600; }
-    .btn-primary:hover { background: #2e2d54; }
-    .error { color: #842029; font-size: 13px; margin-top: 6px; display: none; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .logout-btn { background: none; border: 1.5px solid var(--navy); color: var(--navy); padding: 8px 18px; border-radius: 50px; font-size: 13px; font-weight: 600; }
+    .btn-primary {
+      width: 100%; padding: 14px; background: var(--navy); color: #fff; border: none; border-radius: 50px;
+      font-size: 15px; font-weight: 700; letter-spacing: .2px; transition: background .2s, color .2s, transform .2s;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--gold); color: var(--navy); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .error { color: #b3261e; font-size: 13px; margin-top: 12px; display: none; background: #fdecea; border-radius: 8px; padding: 9px 12px; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 16px; }
+
+    /* ---- Dashboard header ---- */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--cream-dk); }
+    .topbar-brand { display: flex; align-items: center; gap: 12px; }
+    .topbar-brand img { width: 40px; height: 40px; border-radius: 50%; object-fit: contain; background: var(--cream); padding: 4px; }
+    .topbar-brand-text { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--navy); font-size: 17px; }
+    .topbar-brand-text .amp { color: var(--gold); }
+    .logout-btn { background: none; border: 1.5px solid var(--navy); color: var(--navy); padding: 10px 20px; border-radius: 50px; font-size: 13px; font-weight: 600; transition: background .2s, color .2s; }
     .logout-btn:hover { background: var(--navy); color: #fff; }
+
+    /* ---- Admin shell: collapsible sidebar + main content ----
+       A dark navy rail (same brand color as everywhere else on the
+       site, just inverted) with the four sections as top-level nav
+       items instead of one long scrolling page. Desktop gets a
+       collapse toggle that shrinks it to an icon-only rail (state
+       remembered in localStorage); below 900px it becomes an
+       off-canvas drawer opened from a slim mobile top bar, the same
+       drawer pattern the main site's own hamburger menu already
+       uses, so the interaction feels consistent site-wide. */
+    .admin-shell { display: flex; align-items: stretch; min-height: 100vh; }
+
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(20,19,40,.5); z-index: 40; }
+    .sidebar-backdrop.open { display: block; }
+
+    .admin-sidebar {
+      flex-shrink: 0; width: 252px; background: var(--navy); color: rgba(255,255,255,.72);
+      display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+      transition: width .2s ease; z-index: 50; overflow: hidden;
+    }
+    .sidebar-top { display: flex; align-items: center; gap: 10px; padding: 22px 18px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sidebar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; overflow: hidden; }
+    .sidebar-brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: contain; background: var(--cream); padding: 4px; flex-shrink: 0; }
+    .sidebar-brand-text { min-width: 0; overflow: hidden; white-space: nowrap; }
+    .sidebar-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin: 0; }
+    .sidebar-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: #fff; margin: 1px 0 0; }
+    .sidebar-collapse-btn {
+      flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.7); display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s;
+    }
+    .sidebar-collapse-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
+
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 3px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px;
+      background: none; border: none; border-left: 3px solid transparent; color: inherit;
+      font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600; text-align: left; width: 100%;
+      cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .nav-item.active { background: rgba(201,164,90,.16); color: #fff; border-left-color: var(--gold); }
+    .nav-icon { flex-shrink: 0; display: flex; }
+    .nav-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-badge {
+      flex-shrink: 0; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 50px; background: rgba(255,255,255,.14);
+      color: #fff; font-size: 11px; font-weight: 700; display: none; align-items: center; justify-content: center;
+    }
+    .nav-badge-alert { background: #d9534f; }
+
+    .sidebar-footer { padding: 14px 12px 18px; border-top: 1px solid rgba(255,255,255,.08); }
+    .sidebar-logout {
+      display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 10px;
+      background: none; border: 1.5px solid rgba(255,255,255,.16); color: rgba(255,255,255,.8);
+      font-size: 13px; font-weight: 600; transition: background .15s, color .15s, border-color .15s;
+    }
+    .sidebar-logout:hover { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.32); }
+
+    /* Collapse to an icon-only rail -- desktop only. On mobile the
+       sidebar is an open/closed drawer instead (see the max-width:900px
+       block below), so this is deliberately scoped to min-width:901px
+       rather than reset per-breakpoint. */
+    @media (min-width: 901px) {
+      .admin-sidebar.collapsed { width: 76px; }
+      .admin-sidebar.collapsed .sidebar-top { justify-content: center; padding: 22px 0 18px; }
+      .admin-sidebar.collapsed .sidebar-brand { display: none; }
+      .admin-sidebar.collapsed .nav-label { display: none; }
+      .admin-sidebar.collapsed .nav-badge { display: none !important; }
+      .admin-sidebar.collapsed .nav-item { justify-content: center; padding: 11px 0; border-left: none; }
+      .admin-sidebar.collapsed .sidebar-footer { padding: 14px 0 18px; display: flex; justify-content: center; }
+      .admin-sidebar.collapsed .sidebar-logout { width: 40px; padding: 10px; justify-content: center; }
+      .admin-sidebar.collapsed .sidebar-logout .nav-label { display: none; }
+    }
+
+    .admin-main { flex: 1; min-width: 0; }
+    .admin-content { max-width: 1080px; margin: 0 auto; padding: 44px 40px 80px; }
+    .mobile-topbar { display: none; }
+
+    .admin-page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+    .admin-page-head .section-head { margin-bottom: 0; }
+    .admin-page-head h1 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 24px; margin: 0 0 4px; }
+
+    .admin-view { display: none; }
+    .admin-view.active { display: block; }
+
+    /* ---- Stat tiles ---- */
+    .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+    .stat-tile { flex: 1; min-width: 150px; background: var(--white); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; }
+    .stat-badge { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(201,164,90,.45); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: var(--gold); }
+    .stat-tile .num { font-size: 22px; font-weight: 700; color: var(--navy); line-height: 1.15; }
+    .stat-tile .label { font-size: 11.5px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .3px; }
+
+    /* ---- Section cards ---- */
+    .section-head { margin-bottom: 18px; }
+    .section-head h2 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 20px; margin: 0 0 4px; }
+    .section-head p { color: var(--muted); font-size: 13.5px; }
+    .section-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+    .section-head-row .section-head { margin-bottom: 0; }
+    .btn-gold { background: var(--gold); color: var(--navy); border: none; padding: 12px 22px; border-radius: 50px; font-size: 13.5px; font-weight: 700; white-space: nowrap; transition: background .2s, transform .2s; }
+    .btn-gold:hover { background: var(--gold-lt); transform: translateY(-1px); }
+
+    /* ---- Product grid (mirrors the real shop.html card, so what the
+       admin previews here is what a customer will actually see) ---- */
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px,100%),1fr)); gap: 18px; }
+    .padmin-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+    .padmin-img { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--cream-dk); }
+    .padmin-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .padmin-badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 50px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+    .padmin-badge.badge-default { background: var(--navy); color: var(--white); }
+    .padmin-badge.badge-new { background: #27ae60; color: var(--white); }
+    .padmin-badge.badge-premium { background: var(--gold); color: var(--navy); }
+    .padmin-body { padding: 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .padmin-body h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 16px; margin: 0; }
+    .padmin-wt { color: var(--muted); font-size: 12px; }
+    .padmin-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+    .padmin-tag { background: var(--cream); color: var(--navy); font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 50px; }
+    .padmin-price { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--navy); font-size: 17px; margin-top: auto; padding-top: 6px; }
+    .padmin-actions { display: flex; gap: 8px; padding: 0 16px 16px; }
+    .padmin-actions button { flex: 1; padding: 9px; border-radius: 8px; font-size: 12.5px; font-weight: 600; border: 1.5px solid var(--cream-dk); background: var(--white); color: var(--navy); transition: border-color .15s, color .15s; }
+    .padmin-actions button:hover { border-color: var(--gold); color: var(--gold); }
+    .padmin-actions button.danger:hover { border-color: #b3261e; color: #b3261e; }
+
+    /* ---- Add/Edit Product modal -- same overlay pattern as the media
+       preview modal, but a real form dialog rather than an image/video
+       viewer. ---- */
+    .form-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,58,.6); z-index: 998; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+    .form-modal-overlay.open { display: flex; }
+    .form-modal { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-width: 480px; width: 100%; padding: 32px; position: relative; }
+    .form-modal-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: var(--cream); border: none; font-size: 16px; cursor: pointer; color: var(--navy); }
+    .form-modal-close:hover { background: var(--cream-dk); }
+    .form-modal h2 { font-size: 22px; margin-bottom: 4px; }
+    .form-modal .sub { margin-bottom: 22px; }
+    .form-row { margin-bottom: 16px; text-align: left; }
+    .form-row label { display: block; font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 6px; }
+    .form-row input[type=text], .form-row input[type=number], .form-row select, .form-row textarea {
+      width: 100%; padding: 11px 14px; border: 1.5px solid #e4dccb; border-radius: 10px;
+      font-size: 14px; font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+      outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,164,90,.22); background: var(--white);
+    }
+    .form-row textarea { resize: vertical; min-height: 72px; font-family: inherit; }
+    .form-row-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .char-count { text-align: right; font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .tag-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .tag-check { display: flex; align-items: center; gap: 6px; background: var(--cream); border-radius: 50px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: var(--navy); cursor: pointer; }
+    .tag-check input { margin: 0; }
+    .image-drop { border: 1.5px dashed #d8cba9; border-radius: 12px; padding: 14px; text-align: center; cursor: pointer; background: var(--cream); transition: border-color .15s; position: relative; overflow: hidden; }
+    .image-drop:hover { border-color: var(--gold); }
+    .image-drop img { max-width: 100%; max-height: 160px; border-radius: 8px; display: block; margin: 0 auto; }
+    .image-drop .placeholder { color: var(--muted); font-size: 13px; padding: 20px 0; }
+    .image-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 10px 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .4px; }
-    td { padding: 12px; vertical-align: top; }
-    td.mono { font-family: monospace; font-size: 12px; }
-    select { padding: 6px 10px; border-radius: 6px; border: 1.5px solid #ddd; font-size: 13px; font-family: inherit; background: var(--white); }
-    .status-saved { color: #1e7e34; font-size: 11px; margin-left: 8px; display: none; }
-.media-link { background: none; border: none; padding: 0; font-size: 13px; font-weight: 600; color: var(--navy); text-decoration: underline; cursor: pointer; font-family: inherit; }
-.media-link:hover { color: var(--gold); }
-.media-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,58,.75); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
-.media-modal-overlay.open { display: flex; }
-.media-modal { background: #000; border-radius: 12px; max-width: 92vw; max-height: 88vh; position: relative; display: flex; align-items: center; justify-content: center; }
-.media-modal img, .media-modal video { max-width: 92vw; max-height: 88vh; display: block; border-radius: 12px; }
-.media-modal-close { position: absolute; top: -14px; right: -14px; width: 32px; height: 32px; border-radius: 50%; background: var(--white); border: none; font-size: 18px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.3); }
-tr.row-cancelled { background: #fdecea; }
-select.status-cancelled { border-color: #b3261e; color: #b3261e; font-weight: 600; }
-    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
-    .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-    .stat-tile { flex: 1; min-width: 130px; background: var(--white); border-radius: 12px; padding: 16px 20px; box-shadow: 0 4px 24px rgba(28,27,58,.08); }
-    .stat-tile .num { font-size: 24px; font-weight: 700; color: var(--navy); line-height: 1.2; }
-    .stat-tile .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    thead tr { border-bottom: 2px solid var(--cream-dk); }
+    th { text-align: left; padding: 10px 12px; color: var(--navy); font-weight: 700; text-transform: uppercase; font-size: 10.5px; letter-spacing: .5px; }
+    td { padding: 14px 12px; vertical-align: top; border-bottom: 1px solid var(--cream); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--cream); }
+    td.mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
+    select {
+      padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e4dccb; font-size: 13px;
+      font-family: inherit; background: var(--white); color: var(--text); transition: border-color .15s, box-shadow .15s;
+    }
+    select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,164,90,.2); }
+    .status-saved { color: #1e7e34; font-weight: 600; font-size: 11px; margin-left: 8px; display: none; }
+    .media-link { background: none; border: none; padding: 0; font-size: 13px; font-weight: 700; color: var(--navy); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-family: inherit; }
+    .media-link:hover { color: var(--gold); }
+    .media-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,58,.8); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
+    .media-modal-overlay.open { display: flex; }
+    .media-modal { background: #000; border-radius: 12px; max-width: 92vw; max-height: 88vh; position: relative; display: flex; align-items: center; justify-content: center; }
+    .media-modal img, .media-modal video { max-width: 92vw; max-height: 88vh; display: block; border-radius: 12px; }
+    .media-modal-close { position: absolute; top: -14px; right: -14px; width: 32px; height: 32px; border-radius: 50%; background: var(--white); border: none; font-size: 18px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.3); }
+
+    /* ---- Confirm dialog -- a branded stand-in for the browser's own
+       confirm(), used wherever a destructive action needs an "are you
+       sure" step (right now: deleting a product). Same overlay
+       mechanics as the other modals, just smaller and with two
+       explicit actions instead of relying on the OS's native
+       Cancel/OK chrome. ---- */
+    .confirm-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(28,27,58,.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .confirm-modal-overlay.open { display: flex; }
+    .confirm-modal { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-width: 380px; width: 100%; padding: 28px; text-align: left; }
+    .confirm-modal h3 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 19px; margin: 0 0 10px; }
+    .confirm-modal p { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 0 0 24px; }
+    .confirm-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .confirm-modal-actions button { padding: 11px 22px; border-radius: 50px; font-size: 13.5px; font-weight: 700; border: none; cursor: pointer; }
+    .confirm-modal-actions .btn-outline { background: none; border: 1.5px solid var(--cream-dk); color: var(--navy); transition: border-color .15s, color .15s; }
+    .confirm-modal-actions .btn-outline:hover { border-color: var(--navy); }
+    .confirm-modal-actions .btn-danger { background: #b3261e; color: #fff; transition: background .15s; }
+    .confirm-modal-actions .btn-danger:hover { background: #93201a; }
+
+    tr.row-cancelled { background: #fdecea; }
+    tr.row-cancelled:hover { background: #fbe0dd; }
+    select.status-cancelled { border-color: #b3261e; color: #b3261e; font-weight: 600; }
+    /* Delivered = the strong, "done" green used everywhere else on
+       this site for a completed order (see .oc-status in orders.html).
+       Out for Delivery is one stage before that -- same hue, lighter
+       weight, so it reads as "getting there" rather than "done". Full
+       row tint on both, same treatment as row-cancelled above, so the
+       whole line reads at a glance rather than just the dropdown. */
+    select.status-delivered { border-color: #1e7e34; color: #1e7e34; background: #eaf6ec; font-weight: 600; }
+    select.status-out-for-delivery { border-color: #b35c00; color: #b35c00; background: #fdecd2; font-weight: 600; }
+    tr.row-delivered { background: #eaf6ec; }
+    tr.row-delivered:hover { background: #dcefdf; }
+    tr.row-out-for-delivery { background: #fdecd2; }
+    tr.row-out-for-delivery:hover { background: #fbe3b8; }
+    .empty { text-align: center; color: var(--muted); padding: 48px 0; font-size: 14px; }
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
     /* ============ RESPONSIVE ============
        Mobile-first-in-spirit even though the base rules above are
        desktop-first (this page is small enough to patch rather than
-       rewrite): a fixed 6-column table is the one thing that can't
+       rewrite): a fixed-column table is the one thing that can't
        just reflow with flexbox/grid, so below 680px it's rebuilt as
        a stack of labeled rows -- each <td> already carries a
        data-label attribute the JS template sets per column, and
        that label is what the ::before pseudo-element prints. */
     @media (max-width: 900px) {
-      .wrap { padding: 32px 16px 60px; }
+      .wrap { padding: 36px 16px 60px; }
+
+      /* Sidebar becomes an off-canvas drawer: hidden off the left edge,
+         slid in over the content with a dimming backdrop, opened from
+         a slim top bar. Collapse-to-icon-rail is a desktop-only
+         affordance (see the min-width:901px block above), so on
+         mobile the drawer always shows full labels regardless of that
+         stored preference. */
+      .admin-shell { display: block; min-height: 0; }
+      .admin-sidebar {
+        position: fixed; top: 0; left: 0; height: 100vh; width: 264px; max-width: 82vw;
+        transform: translateX(-100%); transition: transform .25s ease; box-shadow: var(--shadow-lg);
+      }
+      .admin-sidebar.mobile-open { transform: translateX(0); }
+      .sidebar-collapse-btn { display: none; }
+
+      .mobile-topbar {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 14px 16px; background: var(--white); border-bottom: 1px solid var(--cream-dk);
+        position: sticky; top: 0; z-index: 30;
+      }
+      .mobile-menu-btn, .mobile-logout-btn {
+        background: none; border: none; color: var(--navy); width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      }
+      .mobile-menu-btn:hover, .mobile-logout-btn:hover { background: var(--cream); }
+      .mobile-topbar-brand { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--navy); font-size: 15px; }
+      .mobile-topbar-brand .amp { color: var(--gold); }
+
+      .admin-content { padding: 26px 16px 60px; }
     }
     @media (max-width: 680px) {
       .topbar { flex-direction: column; align-items: flex-start; gap: 14px; }
       .logout-btn { align-self: flex-start; }
       .stat-tile { min-width: calc(50% - 8px); }
-      .card { padding: 18px; }
+      .card { padding: 20px; }
 
       table, thead, tbody, th, td, tr { display: block; width: 100%; }
       thead { position: absolute; left: -9999px; top: -9999px; } /* keep for screen readers, hide visually */
       tbody tr {
-        border: 1px solid #eee; border-radius: 12px; padding: 14px 16px;
+        border: 1px solid var(--cream-dk); border-radius: 12px; padding: 14px 16px;
         margin-bottom: 14px; box-shadow: 0 2px 10px rgba(28,27,58,.05);
       }
+      tbody tr:hover { background: var(--white); }
       tbody tr:last-child { margin-bottom: 0; }
       td { padding: 8px 0; border: none; }
       td[data-label]::before {
@@ -81,9 +342,23 @@ select.status-cancelled { border-color: #b3261e; color: #b3261e; font-weight: 60
       }
       td.mono { word-break: break-all; }
       select { width: 100%; padding: 10px 12px; font-size: 14px; }
+
+      .section-head-row, .admin-page-head { flex-direction: column; align-items: stretch; }
+      .admin-page-head .btn-gold { width: 100%; }
+      .btn-gold { width: 100%; }
+      .form-modal { padding: 24px 20px; }
+      .form-row-two { grid-template-columns: 1fr; }
     }
     @media (max-width: 420px) {
       .stat-tile { min-width: 100%; }
+      /* The 380px login card already shrinks to fit (width:100% with a
+         max-width), but on a narrow phone the decorative glows and
+         logo are worth trimming down too so the card reads as the
+         whole point of the screen, not one element among several. */
+      .login-screen { padding: 16px; }
+      .login-glow { width: 260px; height: 260px; }
+      .login-logo { width: 56px; height: 56px; }
+      .login-card h1 { font-size: 22px; }
     }
 
     /* Select dropdowns and the sign-out/login buttons are tapped,
@@ -91,68 +366,167 @@ select.status-cancelled { border-color: #b3261e; color: #b3261e; font-weight: 60
        control at or above the ~44px comfortable tap-target size. */
     @media (pointer: coarse) {
       select, .logout-btn, .btn-primary { min-height: 44px; }
+      .nav-item, .sidebar-logout, .mobile-menu-btn, .mobile-logout-btn, .sidebar-collapse-btn { min-height: 44px; }
     }
   </style>
 </head>
 <body>
 
-<div id="loginView" class="wrap" style="display:none;">
+<div id="loginView" class="login-screen" style="display:none;">
+  <div class="login-glow g1"></div>
+  <div class="login-glow g2"></div>
   <div class="card login-card">
+    <img src="assets/images/brineandshell.png" alt="" class="login-logo" onerror="this.style.display='none'" />
+    <p class="eyebrow">Brine &amp; Shell</p>
     <h1>Order Admin</h1>
-    <input type="password" id="adminPassword" placeholder="Admin password" autocomplete="current-password" />
-    <button class="btn-primary" onclick="adminLogin()">Sign In</button>
+    <p class="sub">Sign in to manage orders, returns, and reviews.</p>
+    <div class="field-group">
+      <input type="password" id="adminPassword" placeholder="Admin password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();adminLogin();}" />
+      <button type="button" class="pw-toggle" id="pwToggle" onclick="togglePasswordVisibility()">SHOW</button>
+    </div>
+    <button class="btn-primary" id="adminLoginBtn" onclick="adminLogin()">Sign In</button>
     <div class="error" id="loginError"></div>
   </div>
 </div>
 
-<div id="dashView" class="wrap" style="display:none;">
-  <div class="topbar">
-    <div>
-      <h1>Orders</h1>
-      <p class="sub">Update fulfillment status. The customer gets an email when it changes.</p>
-    </div>
-    <button class="logout-btn" onclick="adminLogout()">Sign Out</button>
-  </div>
-  <div class="stats-row" id="statsRow"></div>
+<div id="dashView" class="admin-shell" style="display:none;">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
 
-  <div class="card">
-    <div class="table-scroll">
-      <table id="ordersTable">
-        <thead>
-          <tr><th>Order</th><th>Date</th><th>Customer</th><th>Account</th><th>Items</th><th>Total</th><th>Delivery Address</th><th>Status</th></tr>
-        </thead>
-        <tbody id="ordersBody"></tbody>
-      </table>
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-brand">
+        <img src="assets/images/brineandshell.png" alt="" onerror="this.style.display='none'" />
+        <div class="sidebar-brand-text">
+          <p class="sidebar-eyebrow">Brine &amp; Shell</p>
+          <p class="sidebar-title">Admin</p>
+        </div>
+      </div>
+      <button class="sidebar-collapse-btn" id="collapseBtn" onclick="toggleSidebarCollapse()" aria-label="Collapse sidebar" title="Collapse sidebar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><line x1="10" y1="4" x2="10" y2="20"/></svg>
+      </button>
     </div>
-    <div class="empty" id="ordersEmpty" style="display:none;">No paid orders yet.</div>
-  </div>
 
-  <div class="card" style="margin-top:24px;">
-    <h1 style="font-size:20px;">Return Requests</h1>
-    <p class="sub">Approve a legitimate return, or cancel one with bad or insufficient info (wrong order, unusable photo, etc). The customer gets an email either way.</p>
-    <div class="table-scroll">
-      <table id="returnsTable">
-        <thead>
-          <tr><th>Requested</th><th>Order</th><th>Customer</th><th>Items</th><th>Reason</th><th>Photo</th><th>Video</th><th>Said Phrase</th><th>Status</th></tr>
-        </thead>
-        <tbody id="returnsBody"></tbody>
-      </table>
-    </div>
-    <div class="empty" id="returnsEmpty" style="display:none;">No return requests yet.</div>
-  </div>
+    <nav class="sidebar-nav" aria-label="Admin sections">
+      <button type="button" class="nav-item active" data-view="products" onclick="switchAdminView('products')" title="Products">
+        <span class="nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
+        <span class="nav-label">Products</span>
+        <span class="nav-badge" id="navBadgeProducts"></span>
+      </button>
+      <button type="button" class="nav-item" data-view="orders" onclick="switchAdminView('orders')" title="Orders">
+        <span class="nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l3 3v17H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
+        <span class="nav-label">Orders</span>
+        <span class="nav-badge" id="navBadgeOrders"></span>
+      </button>
+      <button type="button" class="nav-item" data-view="returns" onclick="switchAdminView('returns')" title="Return Requests">
+        <span class="nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a8 8 0 1 1 2.6 5.9"/><path d="M3 4v6h6"/></svg></span>
+        <span class="nav-label">Return Requests</span>
+        <span class="nav-badge nav-badge-alert" id="navBadgeReturns"></span>
+      </button>
+      <button type="button" class="nav-item" data-view="reviews" onclick="switchAdminView('reviews')" title="Product Reviews">
+        <span class="nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.8 6.4.6-4.8 4.3 1.4 6.3L12 16.9 6.4 20l1.4-6.3-4.8-4.3 6.4-.6z"/></svg></span>
+        <span class="nav-label">Product Reviews</span>
+        <span class="nav-badge nav-badge-alert" id="navBadgeReviews"></span>
+      </button>
+      <button type="button" class="nav-item" data-view="coupons" onclick="switchAdminView('coupons')" title="Coupons">
+        <span class="nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2.5 12.5V5a2.5 2.5 0 0 1 2.5-2.5h7.5l8.09 8.09a2 2 0 0 1 0 2.82z"/><circle cx="8" cy="8.5" r="1.5"/></svg></span>
+        <span class="nav-label">Coupons</span>
+        <span class="nav-badge" id="navBadgeCoupons"></span>
+      </button>
+    </nav>
 
-  <div class="card" style="margin-top:24px;">
-    <h1 style="font-size:20px;">Product Reviews</h1>
-    <p class="sub">Approve a genuine review to publish it on the shop page, or reject spam/abuse. Nothing here is public until approved.</p>
-    <div class="table-scroll">
-      <table id="reviewsTable">
-        <thead>
-          <tr><th>Submitted</th><th>Order</th><th>Customer</th><th>Product</th><th>Rating</th><th>Delivery</th><th>Review</th><th>Status</th></tr>
-        </thead>
-        <tbody id="reviewsBody"></tbody>
-      </table>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" onclick="adminLogout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        <span class="nav-label">Sign Out</span>
+      </button>
     </div>
-    <div class="empty" id="reviewsEmpty" style="display:none;">No reviews yet.</div>
+  </aside>
+
+  <div class="admin-main">
+    <div class="mobile-topbar">
+      <button class="mobile-menu-btn" onclick="openMobileSidebar()" aria-label="Open menu">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="mobile-topbar-brand">Brine <span class="amp">&amp;</span> Shell</div>
+      <button class="mobile-logout-btn" onclick="adminLogout()" aria-label="Sign out">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+
+    <div class="admin-content">
+      <div class="admin-page-head">
+        <div class="section-head">
+          <p class="eyebrow" id="pageEyebrow">Admin Dashboard</p>
+          <h1 id="pageTitle">Products</h1>
+          <p class="sub" id="pageSub">Add, edit, or remove what's for sale. Changes show up on the shop page immediately -- no deploy needed.</p>
+        </div>
+        <button class="btn-gold" id="pageActionBtn" onclick="openProductModal()">+ Add Product</button>
+      </div>
+
+      <section class="admin-view active" data-view="products" id="view-products">
+        <div class="card">
+          <div class="product-grid" id="productGrid"></div>
+          <div class="empty" id="productsEmpty" style="display:none;">No products yet. Add your first one to get it live on the shop page.</div>
+        </div>
+      </section>
+
+      <section class="admin-view" data-view="orders" id="view-orders">
+        <div class="stats-row" id="statsRow"></div>
+        <div class="card">
+          <div class="table-scroll">
+            <table id="ordersTable">
+              <thead>
+                <tr><th>Order</th><th>Date</th><th>Customer</th><th>Account</th><th>Items</th><th>Total</th><th>Coupon</th><th>Delivery Address</th><th>Status</th></tr>
+              </thead>
+              <tbody id="ordersBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="ordersEmpty" style="display:none;">No paid orders yet.</div>
+        </div>
+      </section>
+
+      <section class="admin-view" data-view="returns" id="view-returns">
+        <div class="card">
+          <div class="table-scroll">
+            <table id="returnsTable">
+              <thead>
+                <tr><th>Requested</th><th>Order</th><th>Customer</th><th>Items</th><th>Reason</th><th>Photo</th><th>Video</th><th>Said Phrase</th><th>Status</th></tr>
+              </thead>
+              <tbody id="returnsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="returnsEmpty" style="display:none;">No return requests yet.</div>
+        </div>
+      </section>
+
+      <section class="admin-view" data-view="reviews" id="view-reviews">
+        <div class="card">
+          <div class="table-scroll">
+            <table id="reviewsTable">
+              <thead>
+                <tr><th>Submitted</th><th>Order</th><th>Customer</th><th>Product</th><th>Rating</th><th>Delivery</th><th>Review</th><th>Status</th></tr>
+              </thead>
+              <tbody id="reviewsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="reviewsEmpty" style="display:none;">No reviews yet.</div>
+        </div>
+      </section>
+
+      <section class="admin-view" data-view="coupons" id="view-coupons">
+        <div class="card">
+          <div class="table-scroll">
+            <table id="couponsTable">
+              <thead>
+                <tr><th>Code</th><th>Label</th><th>Discount</th><th>Applies To</th><th>Window</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody id="couponsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="couponsEmpty" style="display:none;">No coupons yet. Add one to run a festival offer.</div>
+        </div>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -160,6 +534,162 @@ select.status-cancelled { border-color: #b3261e; color: #b3261e; font-weight: 60
   <div class="media-modal">
     <button class="media-modal-close" onclick="closeMediaModal()" aria-label="Close preview">✕</button>
     <div id="mediaModalContent"></div>
+  </div>
+</div>
+
+<div class="confirm-modal-overlay" id="confirmModalOverlay" onclick="if(event.target===this) dismissConfirmModal()">
+  <div class="confirm-modal">
+    <h3 id="confirmModalTitle">Are you sure?</h3>
+    <p id="confirmModalMessage"></p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="btn-outline" onclick="dismissConfirmModal()">Cancel</button>
+      <button type="button" class="btn-danger" id="confirmModalConfirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="form-modal-overlay" id="productModalOverlay" onclick="if(event.target===this) closeProductModal()">
+  <div class="form-modal">
+    <button class="form-modal-close" onclick="closeProductModal()" aria-label="Close">✕</button>
+    <p class="eyebrow" id="productModalEyebrow">Products</p>
+    <h2 id="productModalTitle">Add Product</h2>
+    <p class="sub">Fields marked with the label are all required except tags.</p>
+
+    <form id="productForm" onsubmit="return false;">
+      <div class="form-row">
+        <label>Product Photo</label>
+        <label class="image-drop" id="imageDropLabel">
+          <span class="placeholder" id="imagePlaceholder">Click to upload a JPG, PNG, or WEBP (max 5MB)</span>
+          <img id="imagePreview" style="display:none;" alt="" />
+          <input type="file" id="productImage" accept="image/jpeg,image/png,image/webp" onchange="handleImageSelected(this)" />
+        </label>
+      </div>
+
+      <div class="form-row">
+        <label>Product Name</label>
+        <input type="text" id="productName" maxlength="80" placeholder="e.g. Peanut Butter Cubes" />
+      </div>
+
+      <div class="form-row form-row-two">
+        <div>
+          <label>Price (₹)</label>
+          <input type="number" id="productPrice" min="1" step="1" placeholder="299" />
+        </div>
+        <div>
+          <label>Weight / Size</label>
+          <input type="text" id="productWt" maxlength="30" placeholder="e.g. 500g or 10 cubes" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Badge</label>
+        <select id="productBadge">
+          <option value="">None</option>
+          <option value="Bestseller">Bestseller</option>
+          <option value="New">New</option>
+          <option value="Premium">Premium</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>Tags</label>
+        <div class="tag-checks">
+          <label class="tag-check"><input type="checkbox" value="High Protein" checked /> High Protein</label>
+          <label class="tag-check"><input type="checkbox" value="Non-GMO" checked /> Non-GMO</label>
+          <label class="tag-check"><input type="checkbox" value="No Preservatives" checked /> No Preservatives</label>
+          <label class="tag-check"><input type="checkbox" value="Easy to Spread" checked /> Easy to Spread</label>
+        </div>
+        <input type="text" id="productExtraTags" maxlength="120" placeholder="Other tags, comma-separated (e.g. Crunchy)" />
+      </div>
+
+      <div class="form-row">
+        <label>Description</label>
+        <textarea id="productDesc" oninput="enforceWordLimit(this, 150, 'descCount')"></textarea>
+        <div class="char-count" id="descCount">0/150 words</div>
+      </div>
+
+      <div class="error" id="productFormError"></div>
+
+      <button type="button" class="btn-primary" id="productSaveBtn" onclick="submitProductForm()">Save Product</button>
+    </form>
+  </div>
+</div>
+
+<div class="form-modal-overlay" id="couponModalOverlay" onclick="if(event.target===this) closeCouponModal()">
+  <div class="form-modal">
+    <button class="form-modal-close" onclick="closeCouponModal()" aria-label="Close">✕</button>
+    <p class="eyebrow" id="couponModalEyebrow">Coupons</p>
+    <h2 id="couponModalTitle">Add Coupon</h2>
+    <p class="sub">The code is uppercased automatically. Leave the dates blank for a code with no expiry.</p>
+
+    <form id="couponForm" onsubmit="return false;">
+      <div class="form-row">
+        <label>Code</label>
+        <input type="text" id="couponCodeInput" maxlength="30" placeholder="e.g. DIWALI20" style="text-transform:uppercase" />
+      </div>
+
+      <div class="form-row">
+        <label>Label</label>
+        <input type="text" id="couponLabel" maxlength="60" placeholder="e.g. Diwali" />
+      </div>
+
+      <div class="form-row">
+        <label>Description (shown to customers)</label>
+        <input type="text" id="couponDescription" maxlength="120" placeholder="e.g. 20% off for Diwali" />
+      </div>
+
+      <div class="form-row form-row-two">
+        <div>
+          <label>Discount Type</label>
+          <select id="couponType">
+            <option value="percent">Percent off</option>
+            <option value="flat">Flat amount off (₹)</option>
+          </select>
+        </div>
+        <div>
+          <label>Value</label>
+          <input type="number" id="couponValue" min="1" step="1" placeholder="20" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Applies To</label>
+        <select id="couponScope">
+          <option value="general">Any order</option>
+          <option value="first-order">First order only (per account)</option>
+        </select>
+      </div>
+
+      <div class="form-row form-row-two">
+        <div>
+          <label>Start Date (optional)</label>
+          <input type="date" id="couponStartDate" />
+        </div>
+        <div>
+          <label>End Date (optional)</label>
+          <input type="date" id="couponEndDate" />
+        </div>
+      </div>
+
+      <div class="form-row form-row-two">
+        <div>
+          <label>Minimum Order (₹, optional)</label>
+          <input type="number" id="couponMinOrder" min="0" step="1" placeholder="0" />
+        </div>
+        <div>
+          <label>Max Discount (₹, optional)</label>
+          <input type="number" id="couponMaxDiscount" min="0" step="1" placeholder="No cap" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="tag-check"><input type="checkbox" id="couponActive" checked /> Active (customers can use this code right now)</label>
+      </div>
+
+      <div class="error" id="couponFormError"></div>
+
+      <button type="button" class="btn-primary" id="couponSaveBtn" onclick="submitCouponForm()">Save Coupon</button>
+    </form>
   </div>
 </div>
 
@@ -174,12 +704,49 @@ async function checkAdminSession() {
   const res = await fetch(`${API_BASE}/api/admin/orders`, { credentials: 'include' });
   if (res.ok) {
     showDashboard();
+    await loadProducts();
     await loadOrders();
     await loadReturns();
     await loadReviews();
+    await loadCoupons();
   } else {
-    document.getElementById('loginView').style.display = 'block';
+    document.getElementById('loginView').style.display = 'flex';
   }
+}
+
+function togglePasswordVisibility() {
+  const input = document.getElementById('adminPassword');
+  const btn = document.getElementById('pwToggle');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  input.classList.toggle('pw-visible', !showing);
+  btn.textContent = showing ? 'SHOW' : 'HIDE';
+}
+
+// Backed by the server-side lockout in checkAdminPassword's caller
+// (see admin-lockout.util.js) -- this just surfaces the wait time the
+// server already computed and returned as 429 + retryAfterSeconds,
+// counting it down locally so the admin isn't stuck re-guessing into
+// a wall of identical "Incorrect password" errors.
+let lockoutTimer = null;
+function startLockoutCountdown(seconds) {
+  const btn = document.getElementById('adminLoginBtn');
+  const err = document.getElementById('loginError');
+  clearInterval(lockoutTimer);
+  let remaining = Math.max(1, Math.ceil(seconds));
+  btn.disabled = true;
+  const tick = () => {
+    err.textContent = `Too many attempts. Try again in ${remaining}s.`;
+    err.style.display = 'block';
+    remaining -= 1;
+    if (remaining < 0) {
+      clearInterval(lockoutTimer);
+      btn.disabled = false;
+      err.style.display = 'none';
+    }
+  };
+  tick();
+  lockoutTimer = setInterval(tick, 1000);
 }
 
 async function adminLogin() {
@@ -194,12 +761,18 @@ async function adminLogin() {
       body: JSON.stringify({ password }),
     });
     const data = await res.json();
+    if (res.status === 429 && data.retryAfterSeconds) {
+      startLockoutCountdown(data.retryAfterSeconds);
+      return;
+    }
     if (!res.ok || !data.ok) throw new Error(data.error || 'Sign-in failed.');
     document.getElementById('loginView').style.display = 'none';
     showDashboard();
+    await loadProducts();
     await loadOrders();
     await loadReturns();
     await loadReviews();
+    await loadCoupons();
   } catch (e) {
     err.textContent = e.message;
     err.style.display = 'block';
@@ -209,12 +782,573 @@ async function adminLogin() {
 async function adminLogout() {
   await fetch(`${API_BASE}/api/admin/logout`, { method: 'POST', credentials: 'include' });
   document.getElementById('dashView').style.display = 'none';
-  document.getElementById('loginView').style.display = 'block';
+  document.getElementById('loginView').style.display = 'flex';
 }
 
 function showDashboard() {
   document.getElementById('loginView').style.display = 'none';
-  document.getElementById('dashView').style.display = 'block';
+  document.getElementById('dashView').style.display = 'flex';
+  initSidebarState();
+  let lastView = 'products';
+  try { lastView = localStorage.getItem('bs_admin_last_view') || 'products'; } catch {}
+  switchAdminView(lastView);
+}
+
+/* ── SIDEBAR NAVIGATION ──
+   One section visible at a time instead of one long scrolling page,
+   picked from a collapsible rail (desktop) / off-canvas drawer
+   (mobile) -- see the .admin-shell CSS for the layout mechanics.
+   Collapse state and the last section viewed are both remembered in
+   localStorage (a real per-admin convenience on a page they'll open
+   daily, wrapped in try/catch since private-browsing or a locked-down
+   browser can make localStorage throw). */
+const ADMIN_VIEWS = {
+  products: {
+    title: 'Products',
+    sub: "Add, edit, or remove what's for sale. Changes show up on the shop page immediately -- no deploy needed.",
+    action: { label: '+ Add Product', onClick: 'openProductModal()' },
+  },
+  orders: {
+    title: 'Orders',
+    sub: 'Update fulfillment status. The customer gets an email when it changes.',
+    action: null,
+  },
+  returns: {
+    title: 'Return Requests',
+    sub: 'Approve a legitimate return, or cancel one with bad or insufficient info (wrong order, unusable photo, etc). The customer gets an email either way.',
+    action: null,
+  },
+  reviews: {
+    title: 'Product Reviews',
+    sub: 'Approve a genuine review to publish it on the shop page, or reject spam/abuse. Nothing here is public until approved.',
+    action: null,
+  },
+  coupons: {
+    title: 'Coupons',
+    sub: "Create promo codes for festivals and occasions. Lock a code to \"first order only\" and it's automatically rejected for any account that already has a paid order.",
+    action: { label: '+ Add Coupon', onClick: 'openCouponModal()' },
+  },
+};
+
+function switchAdminView(view) {
+  if (!ADMIN_VIEWS[view]) view = 'products';
+
+  document.querySelectorAll('.admin-view').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+  document.querySelectorAll('.nav-item[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+
+  const cfg = ADMIN_VIEWS[view];
+  document.getElementById('pageTitle').textContent = cfg.title;
+  document.getElementById('pageSub').textContent = cfg.sub;
+  const actionBtn = document.getElementById('pageActionBtn');
+  if (cfg.action) {
+    actionBtn.style.display = 'inline-block';
+    actionBtn.textContent = cfg.action.label;
+    actionBtn.setAttribute('onclick', cfg.action.onClick);
+  } else {
+    actionBtn.style.display = 'none';
+  }
+
+  try { localStorage.setItem('bs_admin_last_view', view); } catch {}
+  closeMobileSidebar();
+  window.scrollTo(0, 0);
+}
+
+function initSidebarState() {
+  let collapsed = false;
+  try { collapsed = localStorage.getItem('bs_admin_sidebar_collapsed') === '1'; } catch {}
+  document.getElementById('adminSidebar').classList.toggle('collapsed', collapsed);
+}
+
+function toggleSidebarCollapse() {
+  const collapsed = document.getElementById('adminSidebar').classList.toggle('collapsed');
+  try { localStorage.setItem('bs_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch {}
+}
+
+function openMobileSidebar() {
+  document.getElementById('adminSidebar').classList.add('mobile-open');
+  document.getElementById('sidebarBackdrop').classList.add('open');
+}
+
+function closeMobileSidebar() {
+  document.getElementById('adminSidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+}
+
+// Shows a count on a nav item (product/order totals; pending-only for
+// returns and reviews, since "how many need my attention" is the
+// useful number there, not a lifetime total) -- hidden entirely at
+// zero rather than showing an empty "0" pill.
+function setNavBadge(elId, count) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = count > 0 ? String(count) : '';
+  el.style.display = count > 0 ? 'inline-flex' : 'none';
+}
+
+// Caps a textarea at a word count rather than a character count --
+// splits on whitespace, and only rewrites the field's value on the
+// keystroke that actually goes over the limit (typing normally while
+// under it never touches the value, so the cursor is never disturbed
+// for the common case). Also used once on modal-open to backstop any
+// existing description saved before this cap existed.
+function enforceWordLimit(textarea, maxWords, counterId) {
+  const words = textarea.value.split(/\s+/).filter(Boolean);
+  if (words.length > maxWords) {
+    textarea.value = words.slice(0, maxWords).join(' ');
+  }
+  const count = textarea.value.trim() ? textarea.value.trim().split(/\s+/).length : 0;
+  document.getElementById(counterId).textContent = `${count}/${maxWords} words`;
+}
+
+/* ── CONFIRM DIALOG ──
+   A branded replacement for the browser's native confirm() -- used so
+   far for the one destructive action on this page (deleting a
+   product). openConfirmModal() stashes the caller's callback and the
+   Confirm button's own listener (bound once, below) invokes it. */
+let confirmModalAction = null;
+let confirmModalCancelAction = null;
+function openConfirmModal({ title, message, confirmLabel = 'Delete', onConfirm, onCancel }) {
+  document.getElementById('confirmModalTitle').textContent = title;
+  document.getElementById('confirmModalMessage').textContent = message;
+  document.getElementById('confirmModalConfirmBtn').textContent = confirmLabel;
+  confirmModalAction = onConfirm;
+  confirmModalCancelAction = onCancel || null;
+  document.getElementById('confirmModalOverlay').classList.add('open');
+}
+// Used by the Confirm button -- just closes, since the action itself
+// is about to run right after.
+function closeConfirmModal() {
+  document.getElementById('confirmModalOverlay').classList.remove('open');
+  confirmModalAction = null;
+  confirmModalCancelAction = null;
+}
+// Used by the Cancel button and by clicking outside the modal --
+// closes AND runs whatever the caller wanted on cancel (e.g.
+// reverting a <select> back to its previous value). Kept separate
+// from closeConfirmModal() so the Confirm path never accidentally
+// triggers this too.
+function dismissConfirmModal() {
+  const onCancel = confirmModalCancelAction;
+  closeConfirmModal();
+  if (onCancel) onCancel();
+}
+document.getElementById('confirmModalConfirmBtn').addEventListener('click', () => {
+  const action = confirmModalAction;
+  closeConfirmModal();
+  if (action) action();
+});
+
+// Escapes text before it's interpolated into an HTML string -- same
+// helper orders.html uses for the same reason: a product name or
+// description containing &, <, >, or a quote must never be able to
+// break out of a tag or attribute here.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ── PRODUCTS ──
+   The one section here that edits data/products.json directly rather
+   than a Google Sheet -- see backend/src/utils/products.util.js for
+   why a plain edit here shows up on the shop page immediately. The
+   card markup below intentionally mirrors shop.html's real
+   .product-card (image, badge, name, weight, tags, price) so what the
+   admin previews here is what a customer will actually see, just with
+   Edit/Delete instead of Add to Cart. */
+const KNOWN_TAGS = ['High Protein', 'Non-GMO', 'No Preservatives', 'Easy to Spread'];
+let PRODUCTS_ADMIN = [];
+let editingProductId = null;
+let COUPONS_ADMIN = [];
+let editingCouponCode = null;
+
+async function loadProducts() {
+  const grid = document.getElementById('productGrid');
+  const empty = document.getElementById('productsEmpty');
+  let res, data;
+  try {
+    res = await fetch(`${API_BASE}/api/admin/products`, { credentials: 'include' });
+    data = await res.json();
+  } catch (err) {
+    grid.innerHTML = '';
+    empty.textContent = 'Could not reach the server.';
+    empty.style.display = 'block';
+    setNavBadge('navBadgeProducts', 0);
+    return;
+  }
+  if (!res.ok || !data.ok) {
+    grid.innerHTML = '';
+    empty.textContent = data?.error || 'Could not load products.';
+    empty.style.display = 'block';
+    setNavBadge('navBadgeProducts', 0);
+    return;
+  }
+  PRODUCTS_ADMIN = data.products;
+  setNavBadge('navBadgeProducts', PRODUCTS_ADMIN.length);
+  if (!PRODUCTS_ADMIN.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = PRODUCTS_ADMIN.map(p => `
+    <div class="padmin-card">
+      <div class="padmin-img">
+        <img src="${p.img}" alt="" onerror="this.style.display='none'" />
+        ${p.badge ? `<span class="padmin-badge ${p.bc}">${escapeHtml(p.badge)}</span>` : ''}
+      </div>
+      <div class="padmin-body">
+        <h3>${escapeHtml(p.name)}</h3>
+        <p class="padmin-wt">${escapeHtml(p.wt)}</p>
+        <div class="padmin-tags">${p.tags.map(t => `<span class="padmin-tag">${escapeHtml(t)}</span>`).join('')}</div>
+        <p class="padmin-price">₹${p.price}</p>
+      </div>
+      <div class="padmin-actions">
+        <button type="button" data-edit-id="${escapeHtml(p.id)}">Edit</button>
+        <button type="button" class="danger" data-delete-id="${escapeHtml(p.id)}" data-delete-name="${escapeHtml(p.name)}">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+// One delegated listener for every Edit/Delete button, present or
+// future -- same reasoning as orders.html's review buttons: reads the
+// product id off a data-* attribute instead of baking it into an
+// inline onclick string, which breaks the moment a name contains a
+// real quote character.
+document.getElementById('productGrid').addEventListener('click', (e) => {
+  const editBtn = e.target.closest('[data-edit-id]');
+  if (editBtn) return openProductModal(editBtn.dataset.editId);
+  const delBtn = e.target.closest('[data-delete-id]');
+  if (delBtn) return deleteProductConfirm(delBtn.dataset.deleteId, delBtn.dataset.deleteName);
+});
+
+function openProductModal(id) {
+  editingProductId = id || null;
+  document.getElementById('productFormError').style.display = 'none';
+  document.getElementById('productModalTitle').textContent = id ? 'Edit Product' : 'Add Product';
+  document.getElementById('imagePlaceholder').style.display = 'block';
+  document.getElementById('imagePreview').style.display = 'none';
+  document.getElementById('imagePreview').src = '';
+  document.getElementById('productImage').value = '';
+
+  const product = id ? PRODUCTS_ADMIN.find(p => p.id === id) : null;
+  document.getElementById('productName').value = product?.name || '';
+  document.getElementById('productPrice').value = product?.price || '';
+  document.getElementById('productWt').value = product?.wt || '';
+  document.getElementById('productBadge').value = product?.badge || '';
+  document.getElementById('productDesc').value = product?.desc || '';
+  // Reuses the same word-count-and-trim helper the textarea's oninput
+  // uses, so an existing description somehow over the limit (e.g. one
+  // saved before this cap existed) gets trimmed to 150 words the
+  // moment it's opened for editing, not silently allowed through.
+  enforceWordLimit(document.getElementById('productDesc'), 150, 'descCount');
+
+  const tags = product?.tags || [];
+  document.querySelectorAll('.tag-check input').forEach(cb => {
+    // A brand-new product defaults every known tag to checked (the
+    // checkbox markup's own `checked` attribute); editing an existing
+    // one reflects what that product actually has, which might be
+    // none of them.
+    cb.checked = product ? tags.includes(cb.value) : true;
+  });
+  const extra = tags.filter(t => !KNOWN_TAGS.includes(t));
+  document.getElementById('productExtraTags').value = extra.join(', ');
+
+  if (product?.img) {
+    document.getElementById('imagePlaceholder').style.display = 'none';
+    const preview = document.getElementById('imagePreview');
+    preview.src = product.img;
+    preview.style.display = 'block';
+  }
+
+  document.getElementById('productModalOverlay').classList.add('open');
+}
+
+function closeProductModal() {
+  document.getElementById('productModalOverlay').classList.remove('open');
+}
+
+function handleImageSelected(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('imagePlaceholder').style.display = 'none';
+    const preview = document.getElementById('imagePreview');
+    preview.src = reader.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitProductForm() {
+  const err = document.getElementById('productFormError');
+  err.style.display = 'none';
+
+  const name = document.getElementById('productName').value.trim();
+  const price = document.getElementById('productPrice').value;
+  const wt = document.getElementById('productWt').value.trim();
+  const desc = document.getElementById('productDesc').value.trim();
+  if (!name || !price || !wt || !desc) {
+    err.textContent = 'Please fill in every field (photo, name, price, weight/size, and description).';
+    err.style.display = 'block';
+    return;
+  }
+  const imageFile = document.getElementById('productImage').files?.[0];
+  if (!editingProductId && !imageFile) {
+    err.textContent = 'Please upload a product photo.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const checkedKnown = [...document.querySelectorAll('.tag-check input:checked')].map(cb => cb.value);
+  const extraTags = document.getElementById('productExtraTags').value;
+  const tags = [checkedKnown.join(', '), extraTags].filter(Boolean).join(', ');
+
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('price', price);
+  formData.append('wt', wt);
+  formData.append('desc', desc);
+  formData.append('badge', document.getElementById('productBadge').value);
+  formData.append('tags', tags);
+  if (imageFile) formData.append('image', imageFile);
+
+  const btn = document.getElementById('productSaveBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Saving…';
+  try {
+    const url = editingProductId
+      ? `${API_BASE}/api/admin/products/${encodeURIComponent(editingProductId)}`
+      : `${API_BASE}/api/admin/products`;
+    const res = await fetch(url, {
+      method: editingProductId ? 'PUT' : 'POST',
+      credentials: 'include',
+      body: formData, // no Content-Type header -- the browser sets the multipart boundary itself
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save that product.');
+    closeProductModal();
+    await loadProducts();
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+function deleteProductConfirm(id, name) {
+  openConfirmModal({
+    title: 'Delete product?',
+    message: `Delete "${name}"? This removes it from the shop page immediately. Past orders that included it are unaffected.`,
+    confirmLabel: 'Delete',
+    onConfirm: async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/products/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not delete that product.');
+        await loadProducts();
+      } catch (e) {
+        alert(e.message);
+      }
+    },
+  });
+}
+
+/* ── COUPONS ──
+   Backed by data/coupons.json on the server (utils/coupons.util.js) --
+   the same file validateCoupon() reads from when a customer applies a
+   code in the cart or checks out, so a change saved here takes effect
+   immediately with no deploy. */
+function couponWindowLabel(c) {
+  if (!c.startDate && !c.endDate) return 'No expiry';
+  const fmt = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (c.startDate && c.endDate) return `${fmt(c.startDate)} – ${fmt(c.endDate)}`;
+  if (c.startDate) return `From ${fmt(c.startDate)}`;
+  return `Until ${fmt(c.endDate)}`;
+}
+
+async function loadCoupons() {
+  const body = document.getElementById('couponsBody');
+  const empty = document.getElementById('couponsEmpty');
+  let res, data;
+  try {
+    res = await fetch(`${API_BASE}/api/admin/coupons`, { credentials: 'include' });
+    data = await res.json();
+  } catch (err) {
+    body.innerHTML = '';
+    empty.textContent = 'Could not reach the server.';
+    empty.style.display = 'block';
+    setNavBadge('navBadgeCoupons', 0);
+    return;
+  }
+  if (!res.ok || !data.ok) {
+    body.innerHTML = '';
+    empty.textContent = data?.error || 'Could not load coupons.';
+    empty.style.display = 'block';
+    setNavBadge('navBadgeCoupons', 0);
+    return;
+  }
+  COUPONS_ADMIN = data.coupons;
+  setNavBadge('navBadgeCoupons', COUPONS_ADMIN.length);
+  if (!COUPONS_ADMIN.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  body.innerHTML = COUPONS_ADMIN.map(c => `
+    <tr>
+      <td class="mono" data-label="Code">${escapeHtml(c.code)}</td>
+      <td data-label="Label">${escapeHtml(c.label)}</td>
+      <td data-label="Discount">${c.type === 'percent' ? `${c.value}%` : `₹${c.value}`}${c.maxDiscount != null ? ` (max ₹${c.maxDiscount})` : ''}</td>
+      <td data-label="Applies To">${c.scope === 'first-order' ? 'First order only' : 'Any order'}</td>
+      <td data-label="Window">${couponWindowLabel(c)}</td>
+      <td data-label="Status">${c.active ? '<span style="color:#2e7d32;font-weight:600">Active</span>' : '<span style="color:var(--muted)">Inactive</span>'}</td>
+      <td data-label="">
+        <button type="button" data-edit-code="${escapeHtml(c.code)}">Edit</button>
+        <button type="button" class="danger" data-delete-code="${escapeHtml(c.code)}">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('couponsBody').addEventListener('click', (e) => {
+  const editBtn = e.target.closest('[data-edit-code]');
+  if (editBtn) return openCouponModal(editBtn.dataset.editCode);
+  const delBtn = e.target.closest('[data-delete-code]');
+  if (delBtn) return deleteCouponConfirm(delBtn.dataset.deleteCode);
+});
+
+function openCouponModal(code) {
+  editingCouponCode = code || null;
+  document.getElementById('couponFormError').style.display = 'none';
+  document.getElementById('couponModalTitle').textContent = code ? 'Edit Coupon' : 'Add Coupon';
+
+  const coupon = code ? COUPONS_ADMIN.find(c => c.code === code) : null;
+  const codeInput = document.getElementById('couponCodeInput');
+  codeInput.value = coupon?.code || '';
+  codeInput.disabled = !!code; // the code is the sheet/JSON key -- renaming it here would silently orphan it, so editing is same-code-only; delete + re-add for a rename
+  document.getElementById('couponLabel').value = coupon?.label || '';
+  document.getElementById('couponDescription').value = coupon?.description || '';
+  document.getElementById('couponType').value = coupon?.type || 'percent';
+  document.getElementById('couponValue').value = coupon?.value ?? '';
+  document.getElementById('couponScope').value = coupon?.scope || 'general';
+  document.getElementById('couponStartDate').value = coupon?.startDate || '';
+  document.getElementById('couponEndDate').value = coupon?.endDate || '';
+  document.getElementById('couponMinOrder').value = coupon?.minOrder || '';
+  document.getElementById('couponMaxDiscount').value = coupon?.maxDiscount ?? '';
+  document.getElementById('couponActive').checked = coupon ? !!coupon.active : true;
+
+  document.getElementById('couponModalOverlay').classList.add('open');
+}
+
+function closeCouponModal() {
+  document.getElementById('couponModalOverlay').classList.remove('open');
+}
+
+async function submitCouponForm() {
+  const err = document.getElementById('couponFormError');
+  err.style.display = 'none';
+
+  const code = document.getElementById('couponCodeInput').value.trim().toUpperCase();
+  const label = document.getElementById('couponLabel').value.trim();
+  const description = document.getElementById('couponDescription').value.trim();
+  const type = document.getElementById('couponType').value;
+  const value = Number(document.getElementById('couponValue').value);
+  const scope = document.getElementById('couponScope').value;
+  const startDate = document.getElementById('couponStartDate').value || null;
+  const endDate = document.getElementById('couponEndDate').value || null;
+  const minOrderRaw = document.getElementById('couponMinOrder').value;
+  const maxDiscountRaw = document.getElementById('couponMaxDiscount').value;
+  const active = document.getElementById('couponActive').checked;
+
+  if (!code || !label || !description || !value) {
+    err.textContent = 'Please fill in code, label, description and a discount value.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const payload = {
+    code, label, description, type, value, scope, active,
+    startDate, endDate,
+    minOrder: minOrderRaw ? Number(minOrderRaw) : 0,
+    maxDiscount: maxDiscountRaw ? Number(maxDiscountRaw) : null,
+  };
+
+  const btn = document.getElementById('couponSaveBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Saving…';
+  try {
+    const url = editingCouponCode
+      ? `${API_BASE}/api/admin/coupons/${encodeURIComponent(editingCouponCode)}`
+      : `${API_BASE}/api/admin/coupons`;
+    const res = await fetch(url, {
+      method: editingCouponCode ? 'PUT' : 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save that coupon.');
+    closeCouponModal();
+    await loadCoupons();
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+function deleteCouponConfirm(code) {
+  openConfirmModal({
+    title: 'Delete coupon?',
+    message: `Delete "${code}"? Customers will no longer be able to apply this code. Orders that already used it keep their recorded discount.`,
+    confirmLabel: 'Delete',
+    onConfirm: async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/coupons/${encodeURIComponent(code)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not delete that coupon.');
+        await loadCoupons();
+      } catch (e) {
+        alert(e.message);
+      }
+    },
+  });
+}
+
+// Maps an order status to the <select> class that colors it --
+// shared by the initial render and updateStatus() so both always
+// agree, rather than duplicating this logic in two places.
+function orderStatusClass(status) {
+  if (status === 'Cancelled') return 'status-cancelled';
+  if (status === 'Delivered') return 'status-delivered';
+  if (status === 'Out for Delivery') return 'status-out-for-delivery';
+  return '';
+}
+// Same mapping, for the <tr> itself -- kept as a second function
+// (rather than reusing the class name) since the row and the select
+// use differently-named classes for the same status.
+function orderRowClass(status) {
+  if (status === 'Cancelled') return 'row-cancelled';
+  if (status === 'Delivered') return 'row-delivered';
+  if (status === 'Out for Delivery') return 'row-out-for-delivery';
+  return '';
 }
 
 async function loadOrders() {
@@ -229,6 +1363,7 @@ async function loadOrders() {
     empty.textContent = 'Could not reach the server. Is it running?';
     empty.style.display = 'block';
     renderStats([]);
+    setNavBadge('navBadgeOrders', 0);
     return;
   }
   if (!res.ok || !data.ok) {
@@ -236,6 +1371,7 @@ async function loadOrders() {
     empty.textContent = data?.error || 'Could not load orders. Check the Google Sheets setup in .env.';
     empty.style.display = 'block';
     renderStats([]);
+    setNavBadge('navBadgeOrders', 0);
     return;
   }
   STAGES = data.stages || STAGES;
@@ -246,21 +1382,24 @@ async function loadOrders() {
     empty.textContent = 'No paid orders yet.';
     empty.style.display = 'block';
     renderStats([]);
+    setNavBadge('navBadgeOrders', 0);
     return;
   }
   empty.style.display = 'none';
   renderStats(data.orders);
+  setNavBadge('navBadgeOrders', data.orders.length);
   body.innerHTML = data.orders.map(o => `
-    <tr class="${o.status === 'Cancelled' ? 'row-cancelled' : ''}">
+    <tr class="${orderRowClass(o.status)}">
       <td class="mono" data-label="Order">${o.orderId}</td>
       <td data-label="Date">${new Date(o.date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td data-label="Customer">${o.name}<br><span style="color:#999;font-size:11px">${o.email}${o.phone ? ' · ' + o.phone : ''}</span></td>
       <td data-label="Account" style="font-size:11px;color:${o.accountEmail ? '#999' : '#b3261e'}">${o.accountEmail || 'Not signed in'}</td>
       <td data-label="Items">${o.items}</td>
       <td data-label="Total">₹${o.total}</td>
+      <td data-label="Coupon" style="font-size:11px">${o.couponCode ? `${o.couponCode}<br><span style="color:#999">-₹${o.discount}</span>` : '—'}</td>
       <td data-label="Delivery Address" style="max-width:220px;white-space:pre-wrap">${o.address || 'Not provided'}</td>
       <td data-label="Status">
-        <select onchange="updateStatus('${o.orderId}', this)" data-prev="${o.status}" class="${o.status === 'Cancelled' ? 'status-cancelled' : ''}">
+        <select onchange="updateStatus('${o.orderId}', this)" data-prev="${o.status}" class="${orderStatusClass(o.status)}">
           ${ALL_STATUSES.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
         ${o.status === 'Cancelled' ? `<p style="font-size:11px;color:var(--muted);margin-top:4px;max-width:180px;">${o.cancelReason ? `<strong>Cancelled by customer:</strong> ${o.cancelReason}` : '<strong>Cancelled by admin.</strong>'}</p>` : ''}
@@ -283,8 +1422,11 @@ function renderStats(orders) {
     { label: 'Total Revenue', num: '₹' + totalRevenue.toLocaleString('en-IN') },
     ...STAGES.map(s => ({ label: s, num: counts[s] || 0 })),
   ];
-  document.getElementById('statsRow').innerHTML = tiles.map(t => `
-    <div class="stat-tile"><div class="num">${t.num}</div><div class="label">${t.label}</div></div>
+  document.getElementById('statsRow').innerHTML = tiles.map((t, i) => `
+    <div class="stat-tile">
+      <div class="stat-badge">${String(i + 1).padStart(2, '0')}</div>
+      <div><div class="num">${t.num}</div><div class="label">${t.label}</div></div>
+    </div>
   `).join('');
 }
 
@@ -315,8 +1457,8 @@ async function updateStatus(orderId, selectEl) {
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update status.');
     selectEl.dataset.prev = status;
-    selectEl.classList.toggle('status-cancelled', status === 'Cancelled');
-    selectEl.closest('tr').classList.toggle('row-cancelled', status === 'Cancelled');
+    selectEl.className = orderStatusClass(status);
+    selectEl.closest('tr').className = orderRowClass(status);
     const saved = document.getElementById(`saved-${orderId}`);
     saved.style.display = 'inline';
     setTimeout(() => saved.style.display = 'none', 2500);
@@ -327,6 +1469,19 @@ async function updateStatus(orderId, selectEl) {
 }
 
 /* ── RETURN REQUESTS ── */
+// Same select/row color-class pairing used for orders, extended here
+// with Approved -> green (the other two statuses already existed).
+function returnStatusClass(status) {
+  if (status === 'Cancelled') return 'status-cancelled';
+  if (status === 'Approved') return 'status-delivered';
+  return '';
+}
+function returnRowClass(status) {
+  if (status === 'Cancelled') return 'row-cancelled';
+  if (status === 'Approved') return 'row-delivered';
+  return '';
+}
+
 async function loadReturns() {
   const body = document.getElementById('returnsBody');
   const empty = document.getElementById('returnsEmpty');
@@ -338,12 +1493,14 @@ async function loadReturns() {
     body.innerHTML = '';
     empty.textContent = 'Could not reach the server.';
     empty.style.display = 'block';
+    setNavBadge('navBadgeReturns', 0);
     return;
   }
   if (!res.ok || !data.ok) {
     body.innerHTML = '';
     empty.textContent = data?.error || 'Could not load return requests.';
     empty.style.display = 'block';
+    setNavBadge('navBadgeReturns', 0);
     return;
   }
   RETURN_STATUSES = data.statuses || RETURN_STATUSES;
@@ -352,11 +1509,13 @@ async function loadReturns() {
     body.innerHTML = '';
     empty.textContent = 'No return requests yet.';
     empty.style.display = 'block';
+    setNavBadge('navBadgeReturns', 0);
     return;
   }
   empty.style.display = 'none';
+  setNavBadge('navBadgeReturns', data.returns.filter(r => r.status === 'Requested').length);
   body.innerHTML = data.returns.map(r => `
-    <tr class="${r.status === 'Cancelled' ? 'row-cancelled' : ''}">
+    <tr class="${returnRowClass(r.status)}">
       <td data-label="Requested">${new Date(r.timestamp).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td class="mono" data-label="Order">${r.orderId}</td>
       <td data-label="Customer">${r.email}</td>
@@ -367,7 +1526,7 @@ async function loadReturns() {
       <td data-label="Said Phrase" style="max-width:180px;font-size:12px;">${r.challenge ? `Check the video for: <strong>${r.challenge}</strong>` : 'Not recorded (older request)'}</td>
       <td data-label="Status">
         ${r.id ? `
-          <select onchange="updateReturnStatus('${r.id}', this)" data-prev="${r.status}" class="${r.status === 'Cancelled' ? 'status-cancelled' : ''}">
+          <select onchange="updateReturnStatus('${r.id}', this)" data-prev="${r.status}" class="${returnStatusClass(r.status)}">
             ${RETURN_STATUSES.map(s => `<option value="${s}" ${s === r.status ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
           <span class="status-saved" id="rsaved-${r.id}">✓ Saved</span>
@@ -380,29 +1539,70 @@ async function updateReturnStatus(returnId, selectEl) {
   const status = selectEl.value;
   const prev = selectEl.dataset.prev;
   const verb = status === 'Approved' ? 'approve' : status === 'Cancelled' ? 'cancel' : 'update';
-  if (status !== 'Requested' && !confirm(`${verb.charAt(0).toUpperCase() + verb.slice(1)} this return request? The customer will be emailed.`)) {
-    selectEl.value = prev;
+
+  const applyStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/returns/${encodeURIComponent(returnId)}/status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update that return request.');
+      selectEl.dataset.prev = status;
+      selectEl.className = returnStatusClass(status);
+      selectEl.closest('tr').className = returnRowClass(status);
+      // Keep the sidebar's "needs attention" count in sync without a
+      // full reload -- it only ever moves by one per status change.
+      const badge = document.getElementById('navBadgeReturns');
+      const current = parseInt(badge?.textContent || '0', 10) || 0;
+      if (prev === 'Requested' && status !== 'Requested') setNavBadge('navBadgeReturns', Math.max(0, current - 1));
+      else if (prev !== 'Requested' && status === 'Requested') setNavBadge('navBadgeReturns', current + 1);
+      const saved = document.getElementById(`rsaved-${returnId}`);
+      saved.style.display = 'inline';
+      setTimeout(() => saved.style.display = 'none', 2500);
+    } catch (e) {
+      selectEl.value = prev;
+      alert(e.message);
+    }
+  };
+
+  // Moving back to "Requested" doesn't need a confirmation -- nothing
+  // is being decided, it's just clearing a prior decision.
+  if (status === 'Requested') {
+    applyStatus();
     return;
   }
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/returns/${encodeURIComponent(returnId)}/status`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update that return request.');
-    selectEl.dataset.prev = status;
-    selectEl.classList.toggle('status-cancelled', status === 'Cancelled');
-    selectEl.closest('tr').classList.toggle('row-cancelled', status === 'Cancelled');
-    const saved = document.getElementById(`rsaved-${returnId}`);
-    saved.style.display = 'inline';
-    setTimeout(() => saved.style.display = 'none', 2500);
-  } catch (e) {
-    selectEl.value = prev;
-    alert(e.message);
-  }
+
+  // Approving or cancelling is a real decision, so it still asks
+  // first -- just via the site's own modal instead of the browser's
+  // native confirm(), and without claiming an email goes out. It
+  // doesn't: the customer sees the decision directly on their own
+  // order page (applyReturnStatus() in orders.html) the next time
+  // they check it, same as order status and delivery updates.
+  openConfirmModal({
+    title: `${verb.charAt(0).toUpperCase() + verb.slice(1)} this return request?`,
+    message: status === 'Approved'
+      ? 'The customer will see this marked as approved on their order page.'
+      : 'The customer will see this marked as cancelled on their order page.',
+    confirmLabel: verb.charAt(0).toUpperCase() + verb.slice(1),
+    onConfirm: applyStatus,
+    onCancel: () => { selectEl.value = prev; },
+  });
+}
+
+// Same pairing again for reviews -- Approved -> green, Rejected
+// keeps the existing red treatment.
+function reviewStatusClass(status) {
+  if (status === 'Rejected') return 'status-cancelled';
+  if (status === 'Approved') return 'status-delivered';
+  return '';
+}
+function reviewRowClass(status) {
+  if (status === 'Rejected') return 'row-cancelled';
+  if (status === 'Approved') return 'row-delivered';
+  return '';
 }
 
 async function loadReviews() {
@@ -416,12 +1616,14 @@ async function loadReviews() {
     body.innerHTML = '';
     empty.textContent = 'Could not reach the server.';
     empty.style.display = 'block';
+    setNavBadge('navBadgeReviews', 0);
     return;
   }
   if (!res.ok || !data.ok) {
     body.innerHTML = '';
     empty.textContent = data?.error || 'Could not load reviews.';
     empty.style.display = 'block';
+    setNavBadge('navBadgeReviews', 0);
     return;
   }
   REVIEW_STATUSES = data.statuses || REVIEW_STATUSES;
@@ -430,11 +1632,13 @@ async function loadReviews() {
     body.innerHTML = '';
     empty.textContent = 'No reviews yet.';
     empty.style.display = 'block';
+    setNavBadge('navBadgeReviews', 0);
     return;
   }
   empty.style.display = 'none';
+  setNavBadge('navBadgeReviews', data.reviews.filter(r => r.status === 'Pending').length);
   body.innerHTML = data.reviews.map(r => `
-    <tr class="${r.status === 'Rejected' ? 'row-cancelled' : ''}">
+    <tr class="${reviewRowClass(r.status)}">
       <td data-label="Submitted">${new Date(r.timestamp).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</td>
       <td class="mono" data-label="Order">${r.orderId}</td>
       <td data-label="Customer">${r.name} (${r.email})</td>
@@ -443,7 +1647,7 @@ async function loadReviews() {
       <td data-label="Delivery">${r.deliverySpeed}</td>
       <td data-label="Review" style="max-width:220px;white-space:pre-wrap">${r.text || '(no written review)'}</td>
       <td data-label="Status">
-        <select onchange="updateReviewStatus('${r.id}', this)" data-prev="${r.status}" class="${r.status === 'Rejected' ? 'status-cancelled' : ''}">
+        <select onchange="updateReviewStatus('${r.id}', this)" data-prev="${r.status}" class="${reviewStatusClass(r.status)}">
           ${REVIEW_STATUSES.map(s => `<option value="${s}" ${s === r.status ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
         <label style="display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:4px;white-space:nowrap;">
@@ -465,32 +1669,54 @@ async function updateReviewStatus(reviewId, selectEl) {
   const notifyEl = document.getElementById(`revnotify-${reviewId}`);
   const notify = notifyEl ? notifyEl.checked : true;
   const verb = status === 'Approved' ? 'approve and publish' : status === 'Rejected' ? 'reject' : 'update';
-  if (status !== 'Pending') {
-    const emailNote = notify ? 'The customer will be emailed.' : 'The customer will NOT be emailed (Notify customer is unchecked).';
-    if (!confirm(`${verb.charAt(0).toUpperCase() + verb.slice(1)} this review? ${emailNote}`)) {
+
+  const applyStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/reviews/${encodeURIComponent(reviewId)}/status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notify }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update that review.');
+      selectEl.dataset.prev = status;
+      selectEl.className = reviewStatusClass(status);
+      selectEl.closest('tr').className = reviewRowClass(status);
+      const badge = document.getElementById('navBadgeReviews');
+      const current = parseInt(badge?.textContent || '0', 10) || 0;
+      if (prev === 'Pending' && status !== 'Pending') setNavBadge('navBadgeReviews', Math.max(0, current - 1));
+      else if (prev !== 'Pending' && status === 'Pending') setNavBadge('navBadgeReviews', current + 1);
+      const saved = document.getElementById(`revsaved-${reviewId}`);
+      saved.style.display = 'inline';
+      setTimeout(() => saved.style.display = 'none', 2500);
+    } catch (e) {
       selectEl.value = prev;
-      return;
+      alert(e.message);
     }
+  };
+
+  // Moving back to Pending doesn't need a confirmation -- same
+  // reasoning as returns/orders: nothing is being decided, it's just
+  // clearing a prior decision.
+  if (status === 'Pending') {
+    applyStatus();
+    return;
   }
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/reviews/${encodeURIComponent(reviewId)}/status`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, notify }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update that review.');
-    selectEl.dataset.prev = status;
-    selectEl.classList.toggle('status-cancelled', status === 'Rejected');
-    selectEl.closest('tr').classList.toggle('row-cancelled', status === 'Rejected');
-    const saved = document.getElementById(`revsaved-${reviewId}`);
-    saved.style.display = 'inline';
-    setTimeout(() => saved.style.display = 'none', 2500);
-  } catch (e) {
-    selectEl.value = prev;
-    alert(e.message);
-  }
+
+  // Approving or rejecting is a real decision (and can send a real
+  // email, unlike return/order status), so it still confirms first --
+  // just via the site's own modal instead of the browser's native
+  // confirm(), matching the Return Requests table.
+  openConfirmModal({
+    title: `${verb.charAt(0).toUpperCase() + verb.slice(1)} this review?`,
+    message: notify
+      ? 'The customer will be emailed with the outcome.'
+      : 'The customer will NOT be emailed ("Notify customer" is unchecked).',
+    confirmLabel: verb.charAt(0).toUpperCase() + verb.slice(1),
+    onConfirm: applyStatus,
+    onCancel: () => { selectEl.value = prev; },
+  });
 }
 
 function viewMedia(url, type) {
