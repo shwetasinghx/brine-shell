@@ -32,8 +32,14 @@ function priceCart(items) {
     const product = getProduct(id);
     if (!product) throw new Error(`Unknown product id: ${id}`);
     const quantity = Number(qty);
-    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 50) {
-      throw new Error(`Invalid quantity for ${id}`);
+    // Same 10-per-item cap the frontend enforces (data/products.json's
+    // config.maxQtyPerItem — one number, read on both sides) so a
+    // request that skips the browser's own limit still gets rejected
+    // here. Falls back to 50 if the config is ever missing the key,
+    // just as a hard upper bound rather than trusting an unbounded qty.
+    const maxQty = config.maxQtyPerItem || 50;
+    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > maxQty) {
+      throw new Error(`Invalid quantity for ${id}: must be between 1 and ${maxQty}`);
     }
     return { id, name: product.name, price: product.price, qty: quantity, lineTotal: product.price * quantity };
   });

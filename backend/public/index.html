@@ -129,6 +129,8 @@
   </div>
 </div>
 
+<div id="toast"></div>
+
 <div id="site-footer"></div>
 
 <script src="assets/js/config.js"></script>
@@ -181,6 +183,7 @@ async function handleNL(e) {
 document.addEventListener('DOMContentLoaded', async () => {
   await window.PRODUCTS_READY;
   renderProductPreviewCards('homeProductsGrid', PRODUCTS);
+  syncHomeCartUI();
 });
 </script>
 </body>
