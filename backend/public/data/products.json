@@ -2,7 +2,8 @@
   "config": {
     "freeDeliveryThreshold": 3999,
     "deliveryFee": 49,
-    "currency": "INR"
+    "currency": "INR",
+    "maxQtyPerItem": 10
   },
   "products": [
     {

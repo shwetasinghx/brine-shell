@@ -53,3 +53,29 @@ function syncCartBadge() {
 }
 document.addEventListener('cart:changed', syncCartBadge);
 document.addEventListener('partials:ready', syncCartBadge);
+
+/* The single per-item quantity cap, shared by shop.html's cart drawer
+   and the homepage preview cards, and mirrored server-side in
+   catalog.util.js. Reads data/products.json's config.maxQtyPerItem
+   (loaded into window.SITE_CONFIG by js/products.js) so the number
+   only ever lives in one file; the 10 here is just a fallback for the
+   brief window before that fetch resolves. */
+function getMaxQtyPerItem() {
+  return (window.SITE_CONFIG && SITE_CONFIG.maxQtyPerItem) || 10;
+}
+
+/* Shared toast, used by both shop.html (order placed, coupon errors,
+   cart-pruning notices) and the homepage (quantity-limit notices).
+   Every page that calls showToast() needs a bare `<div id="toast">`
+   somewhere in its body -- see index.html/shop.html. One
+   implementation here instead of two copies drifting apart. */
+let toastTimer = null;
+function showToast(message, { tone = 'success', duration = 4500 } = {}) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  clearTimeout(toastTimer);
+  t.textContent = message;
+  t.classList.toggle('toast-info', tone === 'info');
+  t.style.display = 'block';
+  toastTimer = setTimeout(() => { t.style.display = 'none'; }, duration);
+}

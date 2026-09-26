@@ -148,6 +148,7 @@
 /* ── CART ──
    Backed by localStorage (js/cart.js) so it survives page reloads —
    including clicking the "Cart" nav link itself. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // mirrors checkout.controller.js
 let cart = getCart();
 
 // items() is the one place cart ids get resolved against the live
@@ -293,15 +294,9 @@ function removePromoCode() {
 // Shows a message in the bottom-right toast. tone:'info' (navy) is for
 // background/system notices; the default is the green "you just did
 // something successfully" tone (used for order confirmation).
-let toastTimer = null;
-function showToast(message, { tone = 'success', duration = 4500 } = {}) {
-  const t = document.getElementById('toast');
-  clearTimeout(toastTimer);
-  t.textContent = message;
-  t.classList.toggle('toast-info', tone === 'info');
-  t.style.display = 'block';
-  toastTimer = setTimeout(() => { t.style.display = 'none'; }, duration);
-}
+// showToast() itself now lives in js/cart.js (loaded above) so the
+// homepage's preview cards can raise the same quantity-limit toast
+// this file does, instead of shop.html keeping its own private copy.
 
 // Drops any cart entry whose product id no longer exists in the live
 // catalog (deleted from the admin page since it was added) and tells
@@ -444,7 +439,14 @@ function add(id) {
 }
 
 function chg(id,d) {
-  cart[id]=Math.max(0,(cart[id]||0)+d);
+  const max = getMaxQtyPerItem();
+  const current = cart[id]||0;
+  const next = Math.max(0, current+d);
+  if (d > 0 && current >= max) {
+    showToast(`Max ${max} per order. Need more? Email or WhatsApp us.`, { tone: 'info' });
+    return;
+  }
+  cart[id]=Math.min(next, max);
   saveCart(cart);
   document.getElementById(`qn-${id}`).textContent=cart[id];
   if(cart[id]===0){ document.getElementById(`atc-${id}`).style.display=''; document.getElementById(`qc-${id}`).style.display='none'; }
@@ -739,8 +741,13 @@ async function initiateRazorpay() {
     showCheckoutError('Please fill in the highlighted field' + (missingFields.length > 1 ? 's' : '') + ' to continue.', missingFields);
     return;
   }
-  if(phone.length!==10){ showCheckoutError('Enter a valid 10-digit phone number.', ['cPhone']); return; }
+  // Same three checks, same order, as checkout.controller.js's
+  // /create-order route -- so the browser and the server always agree
+  // on what "valid" means instead of the browser doing a rough guess
+  // that the server then has to correct one round-trip later.
   if(address.length<10){ showCheckoutError('Please enter a complete delivery address.', ['cAddress']); return; }
+  if(!EMAIL_RE.test(email)){ showCheckoutError("That email address doesn't look right.", ['cEmail']); return; }
+  if(phone.replace(/\D/g,'').length!==10){ showCheckoutError('Enter a valid 10-digit phone number.', ['cPhone']); return; }
 
   const payBtn = document.querySelector('.rzp-btn');
   payBtn.disabled = true;
