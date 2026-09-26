@@ -72,6 +72,14 @@ function buildFooter() {
           </svg>
         </a>
       </div>
+      <div class="footer-social footer-whatsapp">
+        <span class="footer-social-label">Chat with us</span>
+        <a href="https://wa.me/918866360617?text=Hi%20Brine%20%26%20Shell%2C%20I%20have%20a%20question." target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="Chat with Brine & Shell on WhatsApp">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.07c-.24.68-1.4 1.32-1.93 1.4-.5.08-1.13.11-1.82-.12-.42-.14-.96-.32-1.65-.63-2.9-1.25-4.8-4.16-4.94-4.35-.14-.19-1.19-1.58-1.19-3.02 0-1.43.75-2.14 1.02-2.43.27-.29.59-.36.79-.36.2 0 .4 0 .57.01.18.01.43-.07.67.51.24.58.83 2.01.9 2.16.07.15.12.32.02.51-.1.19-.15.31-.3.48-.15.17-.31.37-.44.5-.15.15-.3.31-.13.6.17.29.75 1.24 1.62 2.01 1.12.99 2.06 1.3 2.35 1.45.29.15.46.13.63-.05.17-.19.72-.84.92-1.13.19-.29.39-.24.65-.14.27.1 1.68.79 1.97.93.29.14.48.21.55.33.07.12.07.68-.17 1.34z" />
+          </svg>
+        </a>
+      </div>
     </div>
     <div class="footer-links">
       <h4>Quick Links</h4>
@@ -84,7 +92,7 @@ function buildFooter() {
     <div class="footer-links">
       <h4>Contact</h4>
       <a href="mailto:support@brineandshell.com">support@brineandshell.com</a>
-      <a href="tel:+918866360618">+91 8866360618</a>
+      <span class="footer-phone">+91 8866360617</span>
     </div>
   </div>
   <div class="footer-bottom">

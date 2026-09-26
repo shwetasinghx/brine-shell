@@ -187,9 +187,12 @@ img { max-width: 100%; display: block; }
 .footer-social-icon { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--gold); display: flex; align-items: center; justify-content: center; color: var(--gold); flex-shrink: 0; transition: background .2s, color .2s, transform .2s; }
 .footer-social-icon svg { width: 18px; height: 18px; }
 .footer-social-icon:hover { background: var(--gold); color: var(--navy); transform: translateY(-2px); }
+.footer-whatsapp { margin-top: 10px; }
+.footer-whatsapp .footer-social-icon { border-color: #25D366; color: #25D366; }
+.footer-whatsapp .footer-social-icon:hover { background: #25D366; color: #fff; }
 .footer-links h4 { font-family: 'Playfair Display', serif; font-size: 16px; margin-bottom: 16px; color: var(--gold); }
-.footer-links a, .footer-links p { display: block; font-size: 14px; color: rgba(255,255,255,.6); margin-bottom: 10px; transition: color .2s; }
-.footer-links a:hover { color: var(--gold); }
+.footer-links a, .footer-links p, .footer-links .footer-phone { display: block; font-size: 14px; color: rgba(255,255,255,.6); margin-bottom: 10px; transition: color .2s; }
+.footer-links a:hover, .footer-links .footer-phone:hover { color: var(--gold); cursor: default; }
 .footer-bottom { border-top: 1px solid rgba(255,255,255,.1); padding: 20px 5%; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,.45); flex-wrap: wrap; gap: 12px; }
 .footer-pay { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; row-gap: 6px; column-gap: 10px; }
 .footer-pay strong { color: var(--gold); }
