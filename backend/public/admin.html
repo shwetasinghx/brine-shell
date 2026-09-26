@@ -190,6 +190,15 @@
     .padmin-actions button:hover { border-color: var(--gold); color: var(--gold); }
     .padmin-actions button.danger:hover { border-color: #b3261e; color: #b3261e; }
 
+    /* ---- Table row actions (Coupons, and any future admin table) --
+       same bordered-pill look as the product-card actions above, just
+       laid out inline within a table cell instead of a flex-stretched
+       card footer. ---- */
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row-actions button { padding: 7px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600; border: 1.5px solid var(--cream-dk); background: var(--white); color: var(--navy); cursor: pointer; transition: border-color .15s, color .15s; }
+    .row-actions button:hover { border-color: var(--gold); color: var(--gold); }
+    .row-actions button.danger:hover { border-color: #b3261e; color: #b3261e; }
+
     /* ---- Add/Edit Product modal -- same overlay pattern as the media
        preview modal, but a real form dialog rather than an image/video
        viewer. ---- */
@@ -202,7 +211,7 @@
     .form-modal .sub { margin-bottom: 22px; }
     .form-row { margin-bottom: 16px; text-align: left; }
     .form-row label { display: block; font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 6px; }
-    .form-row input[type=text], .form-row input[type=number], .form-row select, .form-row textarea {
+    .form-row input[type=text], .form-row input[type=number], .form-row input[type=date], .form-row select, .form-row textarea {
       width: 100%; padding: 11px 14px; border: 1.5px solid #e4dccb; border-radius: 10px;
       font-size: 14px; font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text);
       transition: border-color .15s, box-shadow .15s;
@@ -210,6 +219,7 @@
     .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
       outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,164,90,.22); background: var(--white);
     }
+    .form-row input[type=date]::-webkit-calendar-picker-indicator { filter: invert(48%) sepia(24%) saturate(1084%) hue-rotate(360deg) brightness(93%) contrast(88%); cursor: pointer; }
     .form-row textarea { resize: vertical; min-height: 72px; font-family: inherit; }
     .form-row-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .char-count { text-align: right; font-size: 11px; color: var(--muted); margin-top: 4px; }
@@ -1215,8 +1225,10 @@ async function loadCoupons() {
       <td data-label="Window">${couponWindowLabel(c)}</td>
       <td data-label="Status">${c.active ? '<span style="color:#2e7d32;font-weight:600">Active</span>' : '<span style="color:var(--muted)">Inactive</span>'}</td>
       <td data-label="">
-        <button type="button" data-edit-code="${escapeHtml(c.code)}">Edit</button>
-        <button type="button" class="danger" data-delete-code="${escapeHtml(c.code)}">Delete</button>
+        <div class="row-actions">
+          <button type="button" data-edit-code="${escapeHtml(c.code)}">Edit</button>
+          <button type="button" class="danger" data-delete-code="${escapeHtml(c.code)}">Delete</button>
+        </div>
       </td>
     </tr>`).join('');
 }
