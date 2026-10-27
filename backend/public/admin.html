@@ -175,6 +175,7 @@
     .padmin-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
     .padmin-img { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--cream-dk); }
     .padmin-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .padmin-photocount { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 10px; }
     .padmin-badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 50px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
     .padmin-badge.badge-default { background: var(--navy); color: var(--white); }
     .padmin-badge.badge-new { background: #27ae60; color: var(--white); }
@@ -226,11 +227,32 @@
     .tag-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
     .tag-check { display: flex; align-items: center; gap: 6px; background: var(--cream); border-radius: 50px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: var(--navy); cursor: pointer; }
     .tag-check input { margin: 0; }
-    .image-drop { border: 1.5px dashed #d8cba9; border-radius: 12px; padding: 14px; text-align: center; cursor: pointer; background: var(--cream); transition: border-color .15s; position: relative; overflow: hidden; }
-    .image-drop:hover { border-color: var(--gold); }
-    .image-drop img { max-width: 100%; max-height: 160px; border-radius: 8px; display: block; margin: 0 auto; }
-    .image-drop .placeholder { color: var(--muted); font-size: 13px; padding: 20px 0; }
-    .image-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .photo-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+    .photo-head label { margin-bottom: 0; }
+    .photo-count { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--cream-dk); color: var(--navy); white-space: nowrap; transition: background .2s, color .2s; }
+    .photo-count.is-empty { background: #fbe9e7; color: #a33; }
+    .photo-count.is-full { background: #e6f4ea; color: #1e7a3c; }
+    .photo-meter { height: 4px; border-radius: 4px; background: var(--cream-dk); overflow: hidden; margin-bottom: 10px; }
+    .photo-meter > span { display: block; height: 100%; width: 0; background: var(--gold); border-radius: 4px; transition: width .25s, background .2s; }
+    .photo-meter.is-full > span { background: #1e7a3c; }
+    .photo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .photo-slot { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+    .photo-slot.filled { background: var(--cream-dk); border: 1.5px solid #e6dcc0; }
+    .photo-slot.filled.is-cover { border-color: var(--gold); }
+    .photo-slot.filled img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-slot.empty { border: 1.5px dashed #d8cba9; background: var(--cream); color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; font-family: inherit; padding: 0; transition: border-color .15s, color .15s; }
+    .photo-slot.empty .plus { font-size: 22px; line-height: 1; }
+    .photo-slot.empty .num { font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+    .photo-slot.empty:hover, .photo-slot.empty:focus-visible, .photo-grid.is-dragover .photo-slot.empty { border-color: var(--gold); color: var(--gold); outline: none; }
+    .photo-slot.empty.next { border-color: var(--gold); color: var(--gold); }
+    .photo-cover-tag { position: absolute; left: 4px; top: 4px; background: var(--gold); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: .03em; padding: 2px 6px; border-radius: 6px; }
+    .photo-new-tag { position: absolute; right: 4px; top: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 9px; font-weight: 600; padding: 2px 5px; border-radius: 6px; }
+    .photo-tools { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; gap: 4px; padding: 4px; background: linear-gradient(transparent, rgba(0,0,0,.55)); }
+    .photo-tools button { border: 0; border-radius: 6px; background: rgba(255,255,255,.92); color: #2a2418; font-size: 11px; line-height: 1; padding: 5px 6px; cursor: pointer; }
+    .photo-tools button:hover { background: #fff; }
+    .photo-tools button.danger { color: #a33; }
+    .photo-hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    @media (max-width: 520px) { .photo-grid { grid-template-columns: repeat(3, 1fr); } }
 
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead tr { border-bottom: 2px solid var(--cream-dk); }
@@ -567,12 +589,14 @@
 
     <form id="productForm" onsubmit="return false;">
       <div class="form-row">
-        <label>Product Photo</label>
-        <label class="image-drop" id="imageDropLabel">
-          <span class="placeholder" id="imagePlaceholder">Click to upload a JPG, PNG, or WEBP (max 5MB)</span>
-          <img id="imagePreview" style="display:none;" alt="" />
-          <input type="file" id="productImage" accept="image/jpeg,image/png,image/webp" onchange="handleImageSelected(this)" />
-        </label>
+        <div class="photo-head">
+          <label>Product Photos</label>
+          <span class="photo-count" id="photoCount" role="status" aria-live="polite">0 / 5</span>
+        </div>
+        <div class="photo-meter" id="photoMeter"><span></span></div>
+        <input type="file" id="productImage" multiple accept="image/jpeg,image/png,image/webp" hidden onchange="handleImagesSelected(this)" />
+        <div class="photo-grid" id="photoGrid"></div>
+        <p class="photo-hint" id="photoHint"></p>
       </div>
 
       <div class="form-row">
@@ -989,6 +1013,7 @@ async function loadProducts() {
     setNavBadge('navBadgeProducts', 0);
     return;
   }
+  if (data && data.maxImages) MAX_PRODUCT_PHOTOS = data.maxImages;
   if (!res.ok || !data.ok) {
     grid.innerHTML = '';
     empty.textContent = data?.error || 'Could not load products.';
@@ -1008,6 +1033,7 @@ async function loadProducts() {
     <div class="padmin-card">
       <div class="padmin-img">
         <img src="${p.img}" alt="" onerror="this.style.display='none'" />
+        ${(p.images && p.images.length > 1) ? `<span class="padmin-photocount">${p.images.length} photos</span>` : ''}
         ${p.badge ? `<span class="padmin-badge ${p.bc}">${escapeHtml(p.badge)}</span>` : ''}
       </div>
       <div class="padmin-body">
@@ -1039,9 +1065,6 @@ function openProductModal(id) {
   editingProductId = id || null;
   document.getElementById('productFormError').style.display = 'none';
   document.getElementById('productModalTitle').textContent = id ? 'Edit Product' : 'Add Product';
-  document.getElementById('imagePlaceholder').style.display = 'block';
-  document.getElementById('imagePreview').style.display = 'none';
-  document.getElementById('imagePreview').src = '';
   document.getElementById('productImage').value = '';
 
   const product = id ? PRODUCTS_ADMIN.find(p => p.id === id) : null;
@@ -1067,12 +1090,11 @@ function openProductModal(id) {
   const extra = tags.filter(t => !KNOWN_TAGS.includes(t));
   document.getElementById('productExtraTags').value = extra.join(', ');
 
-  if (product?.img) {
-    document.getElementById('imagePlaceholder').style.display = 'none';
-    const preview = document.getElementById('imagePreview');
-    preview.src = product.img;
-    preview.style.display = 'block';
-  }
+  // Existing photos come back in saved order; products from before the
+  // multi-photo change only have `img`, so fall back to that.
+  const existing = product ? (Array.isArray(product.images) && product.images.length ? product.images : (product.img ? [product.img] : [])) : [];
+  photoItems = existing.map(p => ({ kind: 'existing', path: p, url: p }));
+  renderPhotoGrid();
 
   document.getElementById('productModalOverlay').classList.add('open');
 }
@@ -1081,17 +1103,112 @@ function closeProductModal() {
   document.getElementById('productModalOverlay').classList.remove('open');
 }
 
-function handleImageSelected(input) {
-  const file = input.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    document.getElementById('imagePlaceholder').style.display = 'none';
-    const preview = document.getElementById('imagePreview');
-    preview.src = reader.result;
-    preview.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+// The photo list is the single source of truth for the form: array order
+// is display order and index 0 is the cover. "existing" items are already
+// on the server (identified by path); "new" items are local Files that get
+// uploaded on save.
+let photoItems = [];
+let MAX_PRODUCT_PHOTOS = 5;
+
+function renderPhotoGrid() {
+  const max = MAX_PRODUCT_PHOTOS;
+  const n = photoItems.length;
+  const left = max - n;
+  const filled = photoItems.map((it, i) => `
+    <div class="photo-slot filled${i === 0 ? ' is-cover' : ''}">
+      <img src="${escapeHtml(it.url)}" alt="Photo ${i + 1}" />
+      ${i === 0 ? '<span class="photo-cover-tag">Cover</span>' : ''}
+      ${it.kind === 'new' ? '<span class="photo-new-tag">New</span>' : ''}
+      <div class="photo-tools">
+        ${i === 0 ? '<span></span>' : `<button type="button" data-photo-cover="${i}" title="Make this the cover photo">Cover</button>`}
+        <button type="button" class="danger" data-photo-remove="${i}" title="Remove this photo" aria-label="Remove photo ${i + 1}">&times;</button>
+      </div>
+    </div>`);
+  // One empty, numbered slot per remaining place so the limit is visible
+  // at a glance; the next free slot is highlighted.
+  const empties = Array.from({ length: left }, (_, k) => `
+    <button type="button" class="photo-slot empty${k === 0 ? ' next' : ''}" data-photo-add aria-label="Add photo ${n + k + 1} of ${max}">
+      <span class="plus">+</span><span class="num">${n + k + 1}</span>
+    </button>`);
+  const grid = document.getElementById('photoGrid');
+  grid.style.gridTemplateColumns = '';
+  grid.innerHTML = filled.concat(empties).join('');
+
+  const pill = document.getElementById('photoCount');
+  pill.textContent = `${n} / ${max}`;
+  pill.classList.toggle('is-empty', n === 0);
+  pill.classList.toggle('is-full', n === max);
+  const meter = document.getElementById('photoMeter');
+  meter.classList.toggle('is-full', n === max);
+  meter.firstElementChild.style.width = `${(n / max) * 100}%`;
+  document.getElementById('productImage').disabled = left === 0;
+  document.getElementById('photoHint').textContent = n === 0
+    ? `Add at least 1 photo (up to ${max}). JPG, PNG, or WEBP, 5MB each. Drag files here or click a slot.`
+    : left === 0
+      ? `Limit reached (${max}/${max}). Remove a photo to add a different one. The first photo is the cover.`
+      : `${left} more photo${left === 1 ? '' : 's'} allowed. The first photo is the cover shown on the shop and home pages.`;
+}
+
+document.getElementById('photoGrid').addEventListener('click', (e) => {
+  if (e.target.closest('[data-photo-add]')) return document.getElementById('productImage').click();
+  const coverBtn = e.target.closest('[data-photo-cover]');
+  if (coverBtn) {
+    const i = Number(coverBtn.dataset.photoCover);
+    const [item] = photoItems.splice(i, 1);
+    photoItems.unshift(item);
+    return renderPhotoGrid();
+  }
+  const rmBtn = e.target.closest('[data-photo-remove]');
+  if (rmBtn) {
+    const [item] = photoItems.splice(Number(rmBtn.dataset.photoRemove), 1);
+    if (item.kind === 'new') URL.revokeObjectURL(item.url);
+    renderPhotoGrid();
+  }
+});
+
+// Drag-and-drop files straight onto the slots.
+(function () {
+  const grid = document.getElementById('photoGrid');
+  grid.addEventListener('dragover', (e) => {
+    if (![...(e.dataTransfer?.types || [])].includes('Files')) return;
+    e.preventDefault();
+    grid.classList.add('is-dragover');
+  });
+  grid.addEventListener('dragleave', (e) => { if (!grid.contains(e.relatedTarget)) grid.classList.remove('is-dragover'); });
+  grid.addEventListener('drop', (e) => {
+    e.preventDefault();
+    grid.classList.remove('is-dragover');
+    addPhotoFiles([...(e.dataTransfer?.files || [])]);
+  });
+})();
+
+function handleImagesSelected(input) {
+  const files = [...(input.files || [])];
+  input.value = ''; // so picking the same file again still fires onchange
+  addPhotoFiles(files);
+}
+
+// Single entry point for both the file picker and drag-and-drop, so the
+// limit/type/size rules live in exactly one place (the server re-checks
+// all three; this is just early, friendly feedback).
+function addPhotoFiles(files) {
+  const err = document.getElementById('productFormError');
+  err.style.display = 'none';
+  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  const skipped = [];
+  let added = 0;
+  for (const file of files) {
+    if (photoItems.length >= MAX_PRODUCT_PHOTOS) { skipped.push(`${file.name} (limit of ${MAX_PRODUCT_PHOTOS} reached)`); continue; }
+    if (!allowed.includes(file.type)) { skipped.push(`${file.name} (not JPG, PNG, or WEBP)`); continue; }
+    if (file.size > 5 * 1024 * 1024) { skipped.push(`${file.name} (over 5MB)`); continue; }
+    photoItems.push({ kind: 'new', file, url: URL.createObjectURL(file) });
+    added++;
+  }
+  renderPhotoGrid();
+  if (skipped.length) {
+    err.textContent = `Added ${added} of ${files.length}. Skipped: ${skipped.join(', ')}.`;
+    err.style.display = 'block';
+  }
 }
 
 async function submitProductForm() {
@@ -1103,13 +1220,12 @@ async function submitProductForm() {
   const wt = document.getElementById('productWt').value.trim();
   const desc = document.getElementById('productDesc').value.trim();
   if (!name || !price || !wt || !desc) {
-    err.textContent = 'Please fill in every field (photo, name, price, weight/size, and description).';
+    err.textContent = 'Please fill in every field (name, price, weight/size, and description).';
     err.style.display = 'block';
     return;
   }
-  const imageFile = document.getElementById('productImage').files?.[0];
-  if (!editingProductId && !imageFile) {
-    err.textContent = 'Please upload a product photo.';
+  if (photoItems.length === 0) {
+    err.textContent = 'Please add at least one product photo.';
     err.style.display = 'block';
     return;
   }
@@ -1125,7 +1241,12 @@ async function submitProductForm() {
   formData.append('desc', desc);
   formData.append('badge', document.getElementById('productBadge').value);
   formData.append('tags', tags);
-  if (imageFile) formData.append('image', imageFile);
+  // imageOrder is the final arrangement: an existing photo's path, or
+  // "new:N" for the Nth file appended below (multer keeps upload order).
+  const newFiles = photoItems.filter(it => it.kind === 'new');
+  let n = 0;
+  formData.append('imageOrder', JSON.stringify(photoItems.map(it => it.kind === 'existing' ? it.path : `new:${n++}`)));
+  newFiles.forEach(it => formData.append('images', it.file));
 
   const btn = document.getElementById('productSaveBtn');
   btn.disabled = true;

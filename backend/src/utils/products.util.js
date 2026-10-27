@@ -36,6 +36,56 @@ const VALID_BADGES = {
   'Premium': { badge: 'Premium', bc: 'badge-premium' },
 };
 
+// Max photos per product -- the one place this number lives; the
+// admin API hands it to the form so the UI limit can't drift.
+const MAX_PRODUCT_IMAGES = 5;
+
+// A product's photos, cover first. Products saved before multi-photo
+// support only have `img`, so fall back to that -- every consumer
+// (shop cards, admin, cart, orders) keeps working on old records.
+function imagesOf(product) {
+  if (Array.isArray(product?.images) && product.images.length) return product.images;
+  return product?.img ? [product.img] : [];
+}
+
+/* Builds the final ordered photo list for a save.
+   `order` is an array of tokens from the admin form, in the order the
+   admin arranged them (first = cover): either an EXISTING photo's
+   path, or "new:N" meaning the Nth freshly uploaded file.
+   `existing` = the product's current photos (empty for a new
+   product), `newPaths` = relative paths of the files just saved.
+   Existing tokens must already belong to this product -- that stops
+   a crafted request from pointing a product at some other file. */
+function resolveImageOrder(existing, order, newPaths) {
+  if (!Array.isArray(order) || order.length === 0) {
+    const err = new Error('Please add at least one product photo.');
+    err.code = 'BAD_IMAGES';
+    throw err;
+  }
+  if (order.length > MAX_PRODUCT_IMAGES) {
+    const err = new Error(`A product can have at most ${MAX_PRODUCT_IMAGES} photos.`);
+    err.code = 'BAD_IMAGES';
+    throw err;
+  }
+  const seen = new Set();
+  return order.map(token => {
+    const t = String(token);
+    let resolved;
+    if (/^new:\d+$/.test(t)) {
+      resolved = newPaths[Number(t.slice(4))];
+    } else if (existing.includes(t)) {
+      resolved = t;
+    }
+    if (!resolved || seen.has(resolved)) {
+      const err = new Error('Those photos could not be matched up. Please reopen the form and try again.');
+      err.code = 'BAD_IMAGES';
+      throw err;
+    }
+    seen.add(resolved);
+    return resolved;
+  });
+}
+
 function readCatalog() {
   const raw = fs.readFileSync(CATALOG_PATH, 'utf8');
   return JSON.parse(raw);
@@ -118,17 +168,20 @@ function getProductById(id) {
   return readCatalog().products.find(p => p.id === id) || null;
 }
 
-// `input`: { name, price, wt, desc, tags (raw string), badge, imgPath (already-saved relative path) }
+// `input`: { name, price, wt, desc, tags (raw string), badge,
+//   imageOrder (tokens, see resolveImageOrder), newImagePaths (already-saved relative paths) }
 function addProduct(input) {
   return withCatalog(catalog => {
     const id = uniqueId(catalog, input.name);
+    const images = resolveImageOrder([], input.imageOrder, input.newImagePaths || []);
     const product = {
       id,
       name: String(input.name || '').trim(),
       price: Number(input.price),
       wt: String(input.wt || '').trim(),
       ...badgeFields(input.badge),
-      img: input.imgPath,
+      img: images[0],
+      images,
       tags: parseTags(input.tags),
       desc: String(input.desc || '').trim(),
     };
@@ -137,25 +190,30 @@ function addProduct(input) {
   });
 }
 
-// `updates` may omit `imgPath` to leave the existing image untouched.
+// `updates.imageOrder` is the full, final photo arrangement (see
+// resolveImageOrder). Returns { product, removedImagePaths } so the
+// caller can delete the files that are no longer referenced.
 function updateProduct(id, updates) {
   return withCatalog(catalog => {
     const idx = catalog.products.findIndex(p => p.id === id);
     if (idx === -1) return { catalog: null, returnValue: null };
     const existing = catalog.products[idx];
-    const oldImagePath = existing.img;
+    const oldImages = imagesOf(existing);
+    const images = resolveImageOrder(oldImages, updates.imageOrder, updates.newImagePaths || []);
     const product = {
       ...existing,
       name: String(updates.name || '').trim(),
       price: Number(updates.price),
       wt: String(updates.wt || '').trim(),
       ...badgeFields(updates.badge),
-      img: updates.imgPath || existing.img,
+      img: images[0],
+      images,
       tags: parseTags(updates.tags),
       desc: String(updates.desc || '').trim(),
     };
     catalog.products[idx] = product;
-    return { catalog, returnValue: { product, oldImagePath: updates.imgPath ? oldImagePath : null } };
+    const removedImagePaths = oldImages.filter(p => !images.includes(p));
+    return { catalog, returnValue: { product, removedImagePaths } };
   });
 }
 
@@ -197,6 +255,8 @@ module.exports = {
   updateProduct,
   deleteProduct,
   deleteProductImage,
+  imagesOf,
+  MAX_PRODUCT_IMAGES,
   getConfig,
   VALID_BADGES,
 };

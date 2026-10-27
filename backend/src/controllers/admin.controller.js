@@ -17,7 +17,7 @@ const { RETURNS_COL: RCOL, RETURN_STATUSES } = require('../utils/returns-schema.
 const { REVIEWS_COL, REVIEW_STATUSES } = require('../utils/reviews-schema.util');
 const { getProduct } = require('../utils/catalog.util');
 const {
-  listProducts, addProduct, updateProduct, deleteProduct, deleteProductImage, IMAGES_DIR, VALID_BADGES,
+  listProducts, addProduct, updateProduct, deleteProduct, deleteProductImage, imagesOf, MAX_PRODUCT_IMAGES, IMAGES_DIR, VALID_BADGES,
 } = require('../utils/products.util');
 const {
   listCoupons, validateCouponFields, addCoupon, updateCoupon, deleteCoupon,
@@ -340,7 +340,7 @@ router.post('/reviews/:reviewId/status', requireAdmin, async (req, res) => {
    same request. */
 
 const PRODUCT_IMAGE_TYPES = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
-const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB -- a single product photo, not a batch
+const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB per photo (up to MAX_PRODUCT_IMAGES photos per product)
 
 const productImageUpload = multer({
   storage: multer.diskStorage({
@@ -354,19 +354,22 @@ const productImageUpload = multer({
       cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
     },
   }),
-  limits: { fileSize: MAX_PRODUCT_IMAGE_BYTES },
+  limits: { fileSize: MAX_PRODUCT_IMAGE_BYTES, files: MAX_PRODUCT_IMAGES },
   fileFilter: (req, file, cb) => {
     const baseType = (file.mimetype || '').split(';')[0];
     cb(null, Object.prototype.hasOwnProperty.call(PRODUCT_IMAGE_TYPES, baseType));
   },
-}).single('image');
+}).array('images', MAX_PRODUCT_IMAGES);
 
 // Wraps multer so a too-large/wrong-type file becomes a normal
 // { ok: false, error } response instead of the generic 500 handler.
 function uploadProductImage(req, res, next) {
   productImageUpload(req, res, (err) => {
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ ok: false, error: `That photo is too large (max ${MAX_PRODUCT_IMAGE_BYTES / 1024 / 1024}MB).` });
+      return res.status(400).json({ ok: false, error: `A photo is too large (max ${MAX_PRODUCT_IMAGE_BYTES / 1024 / 1024}MB each).` });
+    }
+    if (err instanceof multer.MulterError && (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE')) {
+      return res.status(400).json({ ok: false, error: `A product can have at most ${MAX_PRODUCT_IMAGES} photos.` });
     }
     if (err) {
       return res.status(400).json({ ok: false, error: 'Could not process that image. Please use a JPG, PNG, or WEBP file.' });
@@ -376,7 +379,23 @@ function uploadProductImage(req, res, next) {
 }
 
 function cleanupUploadedFile(req) {
-  if (req.file) require('fs').unlink(req.file.path, () => {});
+  (req.files || []).forEach(f => require('fs').unlink(f.path, () => {}));
+}
+
+// The admin form sends the final photo arrangement as a JSON array in
+// `imageOrder` (see products.util.js's resolveImageOrder); anything
+// unparseable just becomes an empty list, which the resolver rejects.
+function parseImageOrder(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function savedImagePaths(req) {
+  return (req.files || []).map(f => `assets/images/products/${f.filename}`);
 }
 
 // Shared validation for both create and edit -- returns an error
@@ -414,7 +433,7 @@ function validateProductFields(body) {
 }
 
 router.get('/products', requireAdmin, (req, res) => {
-  res.json({ ok: true, products: listProducts(), badges: Object.keys(VALID_BADGES).filter(Boolean) });
+  res.json({ ok: true, products: listProducts(), badges: Object.keys(VALID_BADGES).filter(Boolean), maxImages: MAX_PRODUCT_IMAGES });
 });
 
 router.post('/products', requireAdmin, uploadProductImage, async (req, res) => {
@@ -423,8 +442,8 @@ router.post('/products', requireAdmin, uploadProductImage, async (req, res) => {
     cleanupUploadedFile(req);
     return res.status(400).json({ ok: false, error });
   }
-  if (!req.file) {
-    return res.status(400).json({ ok: false, error: 'Please upload a product photo (JPG, PNG, or WEBP, up to 5MB).' });
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ ok: false, error: 'Please upload at least one product photo (JPG, PNG, or WEBP, up to 5MB each).' });
   }
   try {
     // addProduct/updateProduct/deleteProduct all go through
@@ -434,11 +453,13 @@ router.post('/products', requireAdmin, uploadProductImage, async (req, res) => {
     // is async and awaits it rather than treating it as synchronous.
     const product = await addProduct({
       ...req.body,
-      imgPath: `assets/images/products/${req.file.filename}`,
+      imageOrder: parseImageOrder(req.body.imageOrder),
+      newImagePaths: savedImagePaths(req),
     });
     res.json({ ok: true, product });
   } catch (err) {
     cleanupUploadedFile(req);
+    if (err.code === 'BAD_IMAGES') return res.status(400).json({ ok: false, error: err.message });
     console.error('Failed to add product:', err.message);
     res.status(500).json({ ok: false, error: 'Could not save that product right now.' });
   }
@@ -453,18 +474,20 @@ router.put('/products/:id', requireAdmin, uploadProductImage, async (req, res) =
   try {
     const result = await updateProduct(req.params.id, {
       ...req.body,
-      imgPath: req.file ? `assets/images/products/${req.file.filename}` : undefined,
+      imageOrder: parseImageOrder(req.body.imageOrder),
+      newImagePaths: savedImagePaths(req),
     });
     if (!result) {
       cleanupUploadedFile(req);
       return res.status(404).json({ ok: false, error: 'Product not found.' });
     }
-    // A replaced photo's old file is now unreferenced -- clean it up
-    // once the new one is safely saved and the catalog is updated.
-    if (result.oldImagePath) deleteProductImage(result.oldImagePath);
+    // Any photo the admin removed is now unreferenced -- clean the
+    // files up once the new arrangement is safely saved.
+    result.removedImagePaths.forEach(deleteProductImage);
     res.json({ ok: true, product: result.product });
   } catch (err) {
     cleanupUploadedFile(req);
+    if (err.code === 'BAD_IMAGES') return res.status(400).json({ ok: false, error: err.message });
     console.error('Failed to update product:', err.message);
     res.status(500).json({ ok: false, error: 'Could not update that product right now.' });
   }
@@ -476,7 +499,7 @@ router.delete('/products/:id', requireAdmin, async (req, res) => {
     if (!removed) {
       return res.status(404).json({ ok: false, error: 'Product not found.' });
     }
-    deleteProductImage(removed.img);
+    imagesOf(removed).forEach(deleteProductImage);
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to delete product:', err.message);
