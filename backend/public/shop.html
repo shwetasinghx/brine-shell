@@ -408,13 +408,12 @@ function renderProducts() {
   // the page. See jumpToProductFromHash() below.
   document.getElementById('productsGrid').innerHTML = PRODUCTS.map(p=>`
     <div class="product-card" id="product-${p.id}">
-      <div class="pc-img">
-        <img src="${p.img}" alt="${p.name}" width="600" height="600" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <div class="ph" style="display:none"><p>${p.name.split(' ')[0]}</p></div>
+      <div class="pc-img${productImages(p).length > 1 ? ' has-multi' : ''}">
+        ${renderProductImages(p)}
         ${p.badge?`<span class="pc-badge ${p.bc}">${p.badge}</span>`:''}
       </div>
       <div class="pc-body">
-        <h3>${p.name}</h3><p class="wt">${p.wt}</p>${renderRatingLine(p.id)}<p>${p.desc}</p>
+        <div class="pc-title-row"><h3>${p.name}</h3>${renderShareButton(p)}</div><p class="wt">${p.wt}</p>${renderRatingLine(p.id)}<p>${p.desc}</p>
         <div class="pc-tags">${p.tags.map(t=>`<span class="pc-tag">${t}</span>`).join('')}</div>
         <div class="pc-footer">
           <span class="price">₹${p.price}</span>
@@ -476,7 +475,7 @@ function renderCart() {
         <button class="qty-btn" onclick="chg('${i.id}',1)" aria-label="Increase quantity of ${i.name}">+</button>
       </div>
       <button class="cart-action-link" onclick="saveForLater('${i.id}')">Save for later</button>
-      <button class="cart-action-link" onclick="shareProduct('${i.id}')">Share</button>
+      <button class="cart-action-link" data-share-trigger onclick="shareProduct('${i.id}', this)">Share</button>
     </div>`).join('');
   const s=sub(),d=del();
   document.getElementById('cartSub').textContent=`₹${s}`;
@@ -554,26 +553,6 @@ function renderWishlist() {
         <button class="cart-remove" onclick="removeWishlistItem('${p.id}')" aria-label="Remove ${p.name} from wishlist">×</button>
       </div>
     </div>`).join('');
-}
-
-/* Native share sheet when the browser/device supports it (mobile
-   Safari/Chrome, some desktop browsers); otherwise falls back to
-   copying a shareable product link to the clipboard. */
-async function shareProduct(id) {
-  const p = PRODUCTS.find(x => x.id === id);
-  if (!p) return;
-  const url = `${location.origin}${location.pathname}?product=${p.id}`;
-  const shareData = { title: `${p.name} | Brine & Shell`, text: p.desc, url };
-  if (navigator.share) {
-    try { await navigator.share(shareData); } catch { /* user cancelled the share sheet — not an error */ }
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(url);
-    alert('Link copied! Paste it anywhere to share this product.');
-  } catch {
-    prompt('Copy this link to share:', url);
-  }
 }
 
 /* ── CHECKOUT ── */
@@ -824,17 +803,33 @@ document.getElementById('signinOverlay').addEventListener('click',e=>{ if(e.targ
 document.getElementById('reviewsOverlay').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeReviewsModal(); });
 document.addEventListener('DOMContentLoaded', async ()=>{ loadAvailableCoupons(); await window.PRODUCTS_READY; await loadReviewSummaries(); renderProducts(); pruneUnavailableCartItems(); syncCartUI(); renderCart(); renderWishlist(); jumpToProductFromHash(); });
 
-// Scrolls to and briefly highlights the product named in the URL hash
-// (e.g. shop.html#product-cubes, as linked from an order-detail line
-// item on orders.html), so it's obvious which card was clicked
-// through to rather than just landing at the top of a long grid.
+// Scrolls to and briefly highlights a product named in the URL:
+//   shop.html#product-cubes   -- internal links (e.g. a line item on
+//                                orders.html)
+//   shop.html?product=cubes   -- a link someone shared (/p/cubes forwards
+//                                here); see share.controller.js
+// so it's obvious which card was meant instead of landing at the top of
+// a long grid. A shared link to a product that has since been removed
+// says so rather than silently doing nothing.
 function jumpToProductFromHash() {
-  if (!location.hash.startsWith('#product-')) return;
-  const card = document.querySelector(location.hash);
+  const sharedId = new URLSearchParams(location.search).get('product');
+  let card = null;
+  if (sharedId) card = document.getElementById('product-' + sharedId);
+  else if (location.hash.startsWith('#product-')) card = document.getElementById(location.hash.slice(1));
+
+  if (sharedId && !card) {
+    showToast('That product is no longer available. Have a look at what we have now.', { tone: 'info' });
+    return;
+  }
   if (!card) return;
   card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   card.classList.add('jump-highlight');
   setTimeout(() => card.classList.remove('jump-highlight'), 2200);
+  if (sharedId) {
+    showToast(window.CURRENT_USER
+      ? 'Shared with you. Add it to your cart to order.'
+      : 'Shared with you. Add it to your cart. You\'ll sign in at checkout to place the order.', { tone: 'info', duration: 6000 });
+  }
 }
 </script>
 </body>

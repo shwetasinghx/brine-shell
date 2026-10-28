@@ -16,6 +16,7 @@ const addressesRoute = require('./routes/addresses.routes');
 const reviewsRoute = require('./routes/reviews.routes');
 const adminRoute = require('./routes/admin.routes');
 const couponsRoute = require('./routes/coupons.routes');
+const shareRoute = require('./routes/share.routes');
 
 const app = express();
 
@@ -61,6 +62,9 @@ app.use('/api/addresses', formLimiter, addressesRoute);
 app.use('/api/reviews', formLimiter, reviewsRoute);
 app.use('/api/admin/login', adminLoginLimiter);
 app.use('/api/admin', adminRoute);
+
+// Shareable product links (/p/<id>) -- see share.controller.js
+app.use('/p', shareRoute);
 
 app.use(errorHandler);
 
